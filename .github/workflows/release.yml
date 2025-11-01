@@ -47,11 +47,107 @@ jobs:
       - name: Install release dependencies
         run: python -m pip install .[release]
 
+      - name: Determine application version
+        id: app_version
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+from importlib.metadata import version
+print(f"app_version={version('wordimperfect')}")
+PY
+
       - name: Run test suite
         run: pytest
 
       - name: Build distributable with PyInstaller
         run: pyinstaller packaging/wordimperfect.spec
+
+      - name: Prepare code signing certificate (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_CERTIFICATE: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE }}
+          WINDOWS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CODESIGN_CERTIFICATE) {
+            throw 'WINDOWS_CODESIGN_CERTIFICATE secret is not configured.'
+          }
+          if (-not $env:WINDOWS_CODESIGN_CERTIFICATE_PASSWORD) {
+            throw 'WINDOWS_CODESIGN_CERTIFICATE_PASSWORD secret is not configured.'
+          }
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'codesign.pfx'
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_CODESIGN_CERTIFICATE))
+          "CODESIGN_PFX=$pfxPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Sign Windows application binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD }}
+        run: |
+          $signtool = (Get-Command signtool.exe).Source
+          $binary = 'dist\wordimperfect\wordimperfect.exe'
+          if (-not (Test-Path $binary)) {
+            throw "Unable to locate WordImperfect binary at $binary"
+          }
+          & $signtool sign /f "$env:CODESIGN_PFX" /p "$env:WINDOWS_CODESIGN_CERTIFICATE_PASSWORD" /tr "http://timestamp.digicert.com" /td SHA256 /fd SHA256 "$binary"
+
+      - name: Install Inno Setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ steps.app_version.outputs.app_version }}
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            throw "Inno Setup compiler not found at $iscc"
+          }
+          & $iscc "packaging\wordimperfect.iss" /DAppVersion="$env:APP_VERSION" /DDistDir="dist\wordimperfect" /DOutputBaseName="wordimperfect-windows-setup"
+
+      - name: Sign Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_CERTIFICATE_PASSWORD }}
+        run: |
+          $signtool = (Get-Command signtool.exe).Source
+          $installer = 'dist\installer\wordimperfect-windows-setup.exe'
+          if (-not (Test-Path $installer)) {
+            throw "Unable to locate installer at $installer"
+          }
+          & $signtool sign /f "$env:CODESIGN_PFX" /p "$env:WINDOWS_CODESIGN_CERTIFICATE_PASSWORD" /tr "http://timestamp.digicert.com" /td SHA256 /fd SHA256 "$installer"
+
+      - name: Smoke test Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Resolve-Path 'dist\installer\wordimperfect-windows-setup.exe'
+          $installDir = Join-Path $env:LOCALAPPDATA 'WordImperfect'
+          & $installer /VERYSILENT /NORESTART /LOG="$env:RUNNER_TEMP\wordimperfect-installer.log"
+          $exePath = Join-Path $installDir 'wordimperfect.exe'
+          if (-not (Test-Path $exePath)) {
+            throw "Executable was not installed to $exePath"
+          }
+          $process = Start-Process -FilePath $exePath -PassThru
+          Start-Sleep -Seconds 10
+          if ($process.HasExited) {
+            if ($process.ExitCode -ne 0) {
+              throw "wordimperfect.exe exited with code $($process.ExitCode)"
+            }
+          } else {
+            Stop-Process -InputObject $process
+          }
+
+      - name: Stage Windows installer artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item 'dist\installer\wordimperfect-windows-setup.exe' '.' -Force
 
       - name: Archive build outputs (Unix)
         if: runner.os != 'Windows'
@@ -68,6 +164,17 @@ jobs:
           ARCHIVE_NAME: wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
         run: |
           Compress-Archive -Path dist\\wordimperfect -DestinationPath $env:ARCHIVE_NAME -Force
+
+      - name: Generate checksum for Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $file = 'wordimperfect-windows-setup.exe'
+          if (-not (Test-Path $file)) {
+            throw "Expected $file to exist"
+          }
+          $hash = Get-FileHash $file -Algorithm SHA256
+          "$($hash.Hash)  $file" | Out-File -FilePath "$file.sha256" -Encoding ascii
 
       - name: Generate checksum
         shell: bash
@@ -87,13 +194,26 @@ with open(f"{archive}.sha256", "w", encoding="utf-8") as out:
     out.write(f"{h.hexdigest()}  {archive}\n")
 PY
 
-      - name: Upload build artifacts
+      - name: Upload build artifacts (Unix)
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: wordimperfect-${{ matrix.artifact_suffix }}
           path: |
             wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
             wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}.sha256
+          if-no-files-found: error
+
+      - name: Upload build artifacts (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordimperfect-${{ matrix.artifact_suffix }}
+          path: |
+            wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
+            wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}.sha256
+            wordimperfect-windows-setup.exe
+            wordimperfect-windows-setup.exe.sha256
           if-no-files-found: error
 
   release:
@@ -128,6 +248,8 @@ PY
             artifacts/wordimperfect-*.tar.gz.sha256
             artifacts/wordimperfect-*.zip
             artifacts/wordimperfect-*.zip.sha256
+            artifacts/wordimperfect-*.exe
+            artifacts/wordimperfect-*.exe.sha256
             artifacts/wordimperfect-*.sig
           generate_release_notes: true
         env:
