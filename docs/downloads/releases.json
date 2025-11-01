@@ -1,0 +1,36 @@
+{
+  "product": "WordImperfect",
+  "download_page": "https://wordimperfect.github.io/WordImperfect/downloads/",
+  "releases": [
+    {
+      "version": "0.1.0",
+      "date": "2024-05-06",
+      "notes": [
+        "Initialized the project structure with core directories and tooling.",
+        "Added foundational documentation for engineers and contributors.",
+        "Configured Python packaging metadata along with linting and testing toolchains.",
+        "Introduced placeholder test scaffolding to validate the development workflow."
+      ],
+      "downloads": [
+        {
+          "name": "Windows (x64) Installer",
+          "file": "WordImperfect-0.1.0-win-x64.exe",
+          "url": "https://wordimperfect.github.io/WordImperfect/downloads/artifacts/WordImperfect-0.1.0-win-x64.exe",
+          "sha256": "5df9f2def10ae784e9cc6f1212c9cdd649e1cf83755653253f55080b17dcb873"
+        },
+        {
+          "name": "macOS (Universal) Disk Image",
+          "file": "WordImperfect-0.1.0-macos-universal.dmg",
+          "url": "https://wordimperfect.github.io/WordImperfect/downloads/artifacts/WordImperfect-0.1.0-macos-universal.dmg",
+          "sha256": "89b79ea04b2366b41be5c190fdc9abe0cf82eca9058b16dc02231e650801c48d"
+        },
+        {
+          "name": "Linux (x64) AppImage",
+          "file": "WordImperfect-0.1.0-linux-x64.AppImage",
+          "url": "https://wordimperfect.github.io/WordImperfect/downloads/artifacts/WordImperfect-0.1.0-linux-x64.AppImage",
+          "sha256": "6648c3d3cc217b9dcab533f3420a0d9f6d2c24ef84110d08213e9ac46bdbff84"
+        }
+      ]
+    }
+  ]
+}

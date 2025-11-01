@@ -51,6 +51,10 @@ WordImperfect centers around a single document workspace tailored to drafting an
 - **Editing utilities:** Standard clipboard shortcuts are available along with a *Find & Replace…* dialog powered by the editing controllers for deterministic replacements.
 - **Object insertion:** The *Insert* menu provides extensible hooks, currently shipping with image placeholder insertion for drafting layouts that will later include media.
 
+### Downloading installers and release notes
+
+A GitHub Pages-ready catalogue is maintained in [`docs/downloads/`](docs/downloads/). It contains platform installers, SHA-256 checksums, and curated release notes synchronized with `CHANGELOG.md`. Publish the `docs/` folder to surface the "Download WordImperfect" site for end users.
+
 Additional guides for advanced workflows live in `docs/` as they are produced. See [`docs/writing-workflow.md`](docs/writing-workflow.md) for a detailed walkthrough of the baseline authoring lifecycle, editing loop, and formatting capabilities.
 
 ### Building a Desktop Bundle
