@@ -6,7 +6,7 @@ import tkinter as tk
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from wordimperfect.controllers import (
     Alignment,
@@ -17,6 +17,7 @@ from wordimperfect.controllers import (
     ObjectInsertionController,
     TextStyler,
 )
+from wordimperfect.dialogs import FindReplaceDialog
 from wordimperfect.services import FileService
 
 
@@ -49,6 +50,7 @@ class Application:
         self._suspend_modified_event = False
         self._styler = TextStyler(self._text)
         self._insert_menu: tk.Menu | None = None
+        self._find_dialog: FindReplaceDialog | None = None
 
         self._build_menu()
         self._build_toolbar()
@@ -131,6 +133,8 @@ class Application:
         self._root.bind_all("<Control-s>", lambda event: self._save_document())
         self._root.bind_all("<Control-S>", lambda event: self._save_document_as())
         self._root.bind_all("<Control-f>", lambda event: self._open_find_replace())
+        self._root.bind_all("<F3>", self._handle_find_next_shortcut)
+        self._root.bind_all("<Shift-F3>", self._handle_find_previous_shortcut)
 
     def _build_toolbar(self) -> None:
         toolbar = ttk.Frame(self._root, padding=(4, 2))
@@ -480,65 +484,18 @@ class Application:
         self._styler.apply(self._formatting_controller.state)
 
     def _open_find_replace(self) -> None:
-        query = simpledialog.askstring("Find", "Text to find:")
-        if query is None or not query:
+        if self._find_dialog is not None:
+            self._find_dialog.focus()
             return
-        replacement = simpledialog.askstring(
-            "Replace", "Replace with:", initialvalue=""
-        )
-        if replacement is None:
-            return
-        content = self._text.get("1.0", "end-1c")
-        matches = self._editing_controller.find_matches(content, query)
-        if not matches.positions:
-            messagebox.showinfo(
-                "Find & Replace", "No matches were found for the supplied text."
-            )
-            return
-
-        replacements = 0
-        search_start = 0
-        while True:
-            match_index = self._editing_controller.next_occurrence(
-                content, query, start=search_start
-            )
-            if match_index is None:
-                break
-            match_end = match_index + len(query)
-            self._highlight_search_range(match_index, match_end)
-            response = messagebox.askyesnocancel(
-                "Find & Replace",
-                (
-                    "Replace this occurrence?\n\n"
-                    "Yes replaces the highlight, No skips to the next match, "
-                    "Cancel stops the search."
-                ),
-            )
-            self._clear_search_highlight()
-            if response is None:
-                break
-            if response:
-                with self._suspend_modified_tracking():
-                    start_index = self._text.index(f"1.0+{match_index}c")
-                    end_index = self._text.index(f"1.0+{match_end}c")
-                    self._text.delete(start_index, end_index)
-                    self._text.insert(start_index, replacement)
-                content = (
-                    content[:match_index]
-                    + replacement
-                    + content[match_end:]
-                )
-                replacements += 1
-                search_start = match_index + len(replacement)
-                self._document_controller.mark_modified()
-                self._text.edit_modified(True)
-                self._update_status()
-            else:
-                search_start = match_end
-
-        self._clear_search_highlight()
-        messagebox.showinfo(
-            "Find & Replace", f"Replaced {replacements} occurrence(s)."
+        self._find_dialog = FindReplaceDialog(
+            self._root,
+            self._text,
+            self._editing_controller,
+            highlight_callback=self._highlight_search_range,
+            clear_highlight_callback=self._clear_search_highlight,
+            replace_callback=self._apply_replacement,
+            replace_all_callback=self._replace_all_text,
+            on_close=self._on_find_dialog_closed,
         )
 
     def _insert_image(self) -> None:
@@ -565,6 +522,18 @@ class Application:
                 label=name, command=self._make_insert_command(name)
             )
 
+    def _handle_find_next_shortcut(self, _event: tk.Event) -> str:
+        self._open_find_replace()
+        if self._find_dialog is not None:
+            self._find_dialog.find_next()
+        return "break"
+
+    def _handle_find_previous_shortcut(self, _event: tk.Event) -> str:
+        self._open_find_replace()
+        if self._find_dialog is not None:
+            self._find_dialog.find_previous()
+        return "break"
+
     def _highlight_search_range(self, start: int, end: int) -> None:
         start_index = self._text.index(f"1.0+{start}c")
         end_index = self._text.index(f"1.0+{end}c")
@@ -575,6 +544,27 @@ class Application:
 
     def _clear_search_highlight(self) -> None:
         self._text.tag_remove(self._SEARCH_TAG, "1.0", tk.END)
+
+    def _apply_replacement(self, start: int, end: int, replacement: str) -> None:
+        with self._suspend_modified_tracking():
+            start_index = self._text.index(f"1.0+{start}c")
+            end_index = self._text.index(f"1.0+{end}c")
+            self._text.delete(start_index, end_index)
+            self._text.insert(start_index, replacement)
+        self._document_controller.mark_modified()
+        self._text.edit_modified(True)
+        self._update_status()
+
+    def _replace_all_text(self, new_text: str) -> None:
+        with self._suspend_modified_tracking():
+            self._text.delete("1.0", tk.END)
+            self._text.insert("1.0", new_text)
+        self._document_controller.mark_modified()
+        self._text.edit_modified(True)
+        self._update_status()
+
+    def _on_find_dialog_closed(self) -> None:
+        self._find_dialog = None
 
     def _make_insert_command(self, name: str) -> Callable[[], None]:
         def callback() -> None:
