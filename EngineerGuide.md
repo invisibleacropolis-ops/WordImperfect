@@ -29,10 +29,10 @@ This guide provides implementation notes and ongoing context for contributors bu
 | Priority | Item | % Complete | Notes |
 |----------|------|------------|-------|
 | P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 100% | Workflow guide published in `docs/writing-workflow.md`; future edits will track new features as they land. |
-| P1 | Flesh out the GUI requirements and asset pipeline. | 85% | `docs/architecture.md` now details window layout, event lifecycle, theming presets, and the baseline icon catalogue; remaining work is validating assets in packaged builds. |
-| P1 | Document the data model and persistence strategy (if any). | 80% | `docs/data-model.md` captures controllers, in-memory state, and styling metadata snapshots; persistence wiring for styles still pending. |
+| P1 | Flesh out the GUI requirements and asset pipeline. | 95% | `docs/architecture.md` now details window layout, event lifecycle, theming presets, the baseline icon catalogue, and a PyInstaller validation checklist covering asset bundles. Final verification will come from the first packaged release. |
+| P1 | Document the data model and persistence strategy (if any). | 95% | `docs/data-model.md` captures controllers, in-memory state, and the JSON sidecar used to persist paragraph styles; remaining work is folding the metadata into native `.rtf`/`.docx` payloads. |
 | P2 | Populate `docs/` with technical references and design drafts. | 40% | Architecture and data-model references expanded with theming + styling metadata coverage; module deep-dives still needed. |
-| P2 | Persist per-paragraph styling metadata for richer round-tripping. | 25% | Document controller now stores paragraph style snapshots; file-service round trip work outstanding. |
+| P2 | Persist per-paragraph styling metadata for richer round-tripping. | 75% | Paragraph styles now round-trip via `FileService` JSON sidecars; future enhancements will embed formatting directly in `.rtf`/`.docx`. |
 | P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 20% | Controller summaries exist; UI loop to be expanded. |
 | P3 | Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding). | 0% | Requires asset loading strategy. |
 
@@ -76,7 +76,7 @@ Document any deviations or special steps in this guide after the release complet
 - `FormattingController` now models font family/size, foreground colour, inline toggles, alignment, indent, and list types. Logic is pure Python, enabling granular unit tests (`tests/test_controllers_logic.py`).
 - `TextStyler` adapts controller state into Tk text widget mutations. It confines Tk-specific calls (tags, configuration, and list prefixing) to a single helper so the GUI remains thin. Tests rely on a light-weight fake widget to validate behaviour without requiring a display server.
 - **Rationale:** Keeping formatting state and Tk mutations separate allows richer automation/tests and positions us for alternative front-ends if needed.
-- **Gaps:** Styling changes are applied in-memory only. Persisting styles back to `.rtf`/`.docx` will need future work in the file service layer.
+- **Gaps:** Paragraph styles now persist via JSON sidecars handled by `FileService`; the remaining work is translating that metadata into native `.rtf` control words/`.docx` XML so external editors can consume it directly.
 
 ### Editing Utilities
 

@@ -54,6 +54,16 @@ keeps domain logic testable and makes alternative front-ends feasible.
   configuration helpers and ship associated palette files under `assets/themes/`. Document new style toggles alongside the toolbar
   notes above when adding them.
 
+#### Packaged build validation
+
+Run a smoke test after asset or theming changes to ensure PyInstaller bundles the expected files:
+
+1. `python -m pip install -e .[release]`
+2. `pyinstaller packaging/wordimperfect.spec`
+3. Inspect `dist/wordimperfect/assets/` to confirm new icons, fonts, and theme JSON files are present.
+
+Document the outcome in `EngineerGuide.md` when adding new asset categories so future contributors know the packaged footprint.
+
 #### Icon catalogue
 
 The application surface references the following baseline icons. Designers should export assets at 1x, 1.5x, and 2x scale to balance crispness

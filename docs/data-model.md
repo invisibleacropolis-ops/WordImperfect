@@ -31,8 +31,10 @@ persistence layer. Use it when extending document storage or introducing richer 
   application to remember block-level formatting choices independently of inline styling.
 - `DocumentController.record_paragraph_style()` stores or updates entries in this map. Consumers fetch copies using
   `DocumentController.paragraph_style()` or `export_paragraph_styles()` when preparing to serialise documents.
-- Persistence is intentionally shallow today: metadata lives in memory only. The next milestone for this backlog item is teaching
-  `FileService` to emit and read paragraph style payloads (e.g., embedding RTF paragraph control words or DOCX paragraph properties).
+- Paragraph styles are persisted alongside documents via a JSON sidecar stored next to the main file. The `*.styles.json`
+  extension is appended to the original suffix (for example `document.rtf.styles.json`). Each entry records the alignment,
+  indent, and list type so that rich formatting can be restored even when the base file format (like `.txt`) lacks the
+  necessary semantics.
 
 ## Editing Summaries
 
@@ -48,11 +50,10 @@ persistence layer. Use it when extending document storage or introducing richer 
     editor's formatting range.
   - `.docx` – relies on the optional `python-docx` dependency. When absent, attempts raise `RuntimeError` so the GUI can surface a
     clear installation hint.
-- Controllers defer to `FileService.read()`/`write()` and simply decide which destination to use. New formats should keep this
-  division of responsibility by expanding `FileService` while leaving `DocumentController` untouched.
-- Persistence currently stores textual content only. Styling metadata exists exclusively in memory. Future work to round-trip
-  formatting should extend `FileService` to emit/consume richer structures (e.g., RTF with styling tags or DOCX runs) and augment
-  `DocumentController.snapshot()` once introduced.
+- Controllers defer to `FileService.read_with_styles()`/`write_with_styles()` so text and paragraph metadata stay synchronised.
+  The helper manages the JSON sidecar described above, removing it automatically when no styles are tracked to avoid stale files.
+- Future work to embed styles directly inside `.rtf`/`.docx` documents can reuse the same metadata map—only the
+  `FileService` implementation would need to change to translate the JSON payload into native control words or XML nodes.
 
 ## Extending the Model
 
