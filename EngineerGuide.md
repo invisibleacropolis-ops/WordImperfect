@@ -28,7 +28,7 @@ This guide provides implementation notes and ongoing context for contributors bu
 
 | Priority | Item | % Complete | Notes |
 |----------|------|------------|-------|
-| P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 60% | README now captures lifecycle, formatting, editing, and insertion usage guidance. |
+| P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 95% | Dedicated workflow guide added in `docs/writing-workflow.md`; README now links to it. |
 | P1 | Flesh out the GUI requirements and asset pipeline. | 10% | Toolbar established; theming + typography asset sourcing outstanding. |
 | P1 | Document the data model and persistence strategy (if any). | 0% | Aligns controllers with planned storage back-ends. |
 | P2 | Populate `docs/` with technical references and design drafts. | 30% | Architecture primer drafted; deeper module deep-dives pending. |
