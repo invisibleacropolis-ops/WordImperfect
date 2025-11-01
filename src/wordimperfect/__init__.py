@@ -9,11 +9,10 @@ __all__ = ["__version__", "Application"]
 __version__ = "0.1.0"
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> object:
     if name == "Application":
         from .app import Application
 
         return Application
     msg = f"module 'wordimperfect' has no attribute '{name}'"
     raise AttributeError(msg)
-

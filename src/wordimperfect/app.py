@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import tkinter as tk
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
-import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
 
 from wordimperfect.controllers import (
@@ -41,7 +41,7 @@ class Application:
         self._underline_var = tk.BooleanVar(value=False)
         state = self._formatting_controller.state
         self._font_var = tk.StringVar(value=state.font_family)
-        self._size_var = tk.IntVar(value=state.font_size)
+        self._size_var = tk.StringVar(value=str(state.font_size))
         self._color_var = tk.StringVar(value=state.foreground)
         self._list_var = tk.StringVar(value=state.list_type.value)
         self._suspend_modified_event = False
@@ -65,10 +65,16 @@ class Application:
         menubar = tk.Menu(self._root)
 
         file_menu = tk.Menu(menubar, tearoff=False)
-        file_menu.add_command(label="New", accelerator="Ctrl+N", command=self._new_document)
-        file_menu.add_command(label="Open…", accelerator="Ctrl+O", command=self._open_document)
+        file_menu.add_command(
+            label="New", accelerator="Ctrl+N", command=self._new_document
+        )
+        file_menu.add_command(
+            label="Open…", accelerator="Ctrl+O", command=self._open_document
+        )
         file_menu.add_separator()
-        file_menu.add_command(label="Save", accelerator="Ctrl+S", command=self._save_document)
+        file_menu.add_command(
+            label="Save", accelerator="Ctrl+S", command=self._save_document
+        )
         file_menu.add_command(
             label="Save As…", accelerator="Ctrl+Shift+S", command=self._save_document_as
         )
@@ -77,19 +83,37 @@ class Application:
         menubar.add_cascade(label="File", menu=file_menu)
 
         edit_menu = tk.Menu(menubar, tearoff=False)
-        edit_menu.add_command(label="Undo", accelerator="Ctrl+Z", command=self._text.edit_undo)
-        edit_menu.add_command(label="Redo", accelerator="Ctrl+Y", command=self._text.edit_redo)
-        edit_menu.add_separator()
-        edit_menu.add_command(label="Cut", accelerator="Ctrl+X", command=lambda: self._root.event_generate("<<Cut>>"))
         edit_menu.add_command(
-            label="Copy", accelerator="Ctrl+C", command=lambda: self._root.event_generate("<<Copy>>")
+            label="Undo", accelerator="Ctrl+Z", command=self._text.edit_undo
         )
         edit_menu.add_command(
-            label="Paste", accelerator="Ctrl+V", command=lambda: self._root.event_generate("<<Paste>>")
+            label="Redo", accelerator="Ctrl+Y", command=self._text.edit_redo
         )
         edit_menu.add_separator()
-        edit_menu.add_command(label="Select All", accelerator="Ctrl+A", command=self._select_all)
-        edit_menu.add_command(label="Find && Replace…", accelerator="Ctrl+F", command=self._open_find_replace)
+        edit_menu.add_command(
+            label="Cut",
+            accelerator="Ctrl+X",
+            command=lambda: self._root.event_generate("<<Cut>>"),
+        )
+        edit_menu.add_command(
+            label="Copy",
+            accelerator="Ctrl+C",
+            command=lambda: self._root.event_generate("<<Copy>>"),
+        )
+        edit_menu.add_command(
+            label="Paste",
+            accelerator="Ctrl+V",
+            command=lambda: self._root.event_generate("<<Paste>>"),
+        )
+        edit_menu.add_separator()
+        edit_menu.add_command(
+            label="Select All", accelerator="Ctrl+A", command=self._select_all
+        )
+        edit_menu.add_command(
+            label="Find && Replace…",
+            accelerator="Ctrl+F",
+            command=self._open_find_replace,
+        )
         menubar.add_cascade(label="Edit", menu=edit_menu)
 
         insert_menu = tk.Menu(menubar, tearoff=False)
@@ -109,36 +133,75 @@ class Application:
     def _build_toolbar(self) -> None:
         toolbar = ttk.Frame(self._root, padding=(4, 2))
         font_choices = ("Arial", "Courier New", "Helvetica", "Times New Roman")
-        font_box = ttk.Combobox(toolbar, textvariable=self._font_var, values=font_choices, width=18)
+        font_box = ttk.Combobox(
+            toolbar, textvariable=self._font_var, values=font_choices, width=18
+        )
         font_box.bind("<<ComboboxSelected>>", lambda event: self._change_font_family())
 
-        size_box = ttk.Combobox(toolbar, textvariable=self._size_var, values=[8, 10, 12, 14, 18, 24, 32], width=4)
+        size_choices = ("8", "10", "12", "14", "18", "24", "32")
+        size_box = ttk.Combobox(
+            toolbar,
+            textvariable=self._size_var,
+            values=size_choices,
+            width=4,
+        )
         size_box.bind("<<ComboboxSelected>>", lambda event: self._change_font_size())
 
         color_btn = ttk.Button(toolbar, text="Color", command=self._choose_color)
 
-        bold_btn = ttk.Checkbutton(toolbar, text="Bold", variable=self._bold_var, command=self._toggle_bold)
-        italic_btn = ttk.Checkbutton(toolbar, text="Italic", variable=self._italic_var, command=self._toggle_italic)
+        bold_btn = ttk.Checkbutton(
+            toolbar, text="Bold", variable=self._bold_var, command=self._toggle_bold
+        )
+        italic_btn = ttk.Checkbutton(
+            toolbar,
+            text="Italic",
+            variable=self._italic_var,
+            command=self._toggle_italic,
+        )
         underline_btn = ttk.Checkbutton(
-            toolbar, text="Underline", variable=self._underline_var, command=self._toggle_underline
+            toolbar,
+            text="Underline",
+            variable=self._underline_var,
+            command=self._toggle_underline,
         )
 
-        align_left = ttk.Button(toolbar, text="Left", command=lambda: self._set_alignment(Alignment.LEFT))
-        align_center = ttk.Button(toolbar, text="Center", command=lambda: self._set_alignment(Alignment.CENTER))
-        align_right = ttk.Button(toolbar, text="Right", command=lambda: self._set_alignment(Alignment.RIGHT))
+        align_left = ttk.Button(
+            toolbar, text="Left", command=lambda: self._set_alignment(Alignment.LEFT)
+        )
+        align_center = ttk.Button(
+            toolbar,
+            text="Center",
+            command=lambda: self._set_alignment(Alignment.CENTER),
+        )
+        align_right = ttk.Button(
+            toolbar, text="Right", command=lambda: self._set_alignment(Alignment.RIGHT)
+        )
 
-        indent_decrease = ttk.Button(toolbar, text="Indent -", command=self._decrease_indent)
-        indent_increase = ttk.Button(toolbar, text="Indent +", command=self._increase_indent)
+        indent_decrease = ttk.Button(
+            toolbar, text="Indent -", command=self._decrease_indent
+        )
+        indent_increase = ttk.Button(
+            toolbar, text="Indent +", command=self._increase_indent
+        )
 
         list_box = ttk.Combobox(
             toolbar,
             textvariable=self._list_var,
-            values=[ListType.NONE.value, ListType.BULLET.value, ListType.NUMBERED.value],
+            values=[
+                ListType.NONE.value,
+                ListType.BULLET.value,
+                ListType.NUMBERED.value,
+            ],
             width=9,
             state="readonly",
         )
-        list_box.bind("<<ComboboxSelected>>", lambda event: self._set_list_type(self._list_var.get()))
-        clear_list_btn = ttk.Button(toolbar, text="Clear List", command=self._clear_list_type)
+        list_box.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self._set_list_type(self._list_var.get()),
+        )
+        clear_list_btn = ttk.Button(
+            toolbar, text="Clear List", command=self._clear_list_type
+        )
 
         widgets = [
             font_box,
@@ -218,7 +281,9 @@ class Application:
 
     def _save_document_as(self) -> None:
         filetypes = list(self._document_controller.supported_filetypes())
-        filename = filedialog.asksaveasfilename(filetypes=filetypes, defaultextension=".rtf")
+        filename = filedialog.asksaveasfilename(
+            filetypes=filetypes, defaultextension=".rtf"
+        )
         if not filename:
             return
         path = Path(filename)
@@ -299,7 +364,9 @@ class Application:
         self._apply_formatting()
         self._update_status()
 
-    def _on_text_modified(self, event: tk.Event[tk.Widget]) -> None:  # pragma: no cover - Tkinter event signature
+    def _on_text_modified(
+        self, event: tk.Event[tk.Widget]
+    ) -> None:  # pragma: no cover - Tkinter event signature
         if self._suspend_modified_event:
             self._text.edit_modified(False)
             return
@@ -317,7 +384,10 @@ class Application:
     # Status helpers
     # ------------------------------------------------------------------
     def _confirm_discard_changes(self) -> bool:
-        if not self._document_controller.metadata.is_modified and not self._text.edit_modified():
+        if (
+            not self._document_controller.metadata.is_modified
+            and not self._text.edit_modified()
+        ):
             return True
         response = messagebox.askyesnocancel(
             "Unsaved Changes",
@@ -333,22 +403,36 @@ class Application:
 
     def _formatting_status(self) -> str:
         state = self._formatting_controller.state
-        flags = [name for name, active in (("B", state.bold), ("I", state.italic), ("U", state.underline)) if active]
+        flags = [
+            name
+            for name, active in (
+                ("B", state.bold),
+                ("I", state.italic),
+                ("U", state.underline),
+            )
+            if active
+        ]
         inline = "None" if not flags else " ".join(flags)
-        return (
-            f"Font: {state.font_family} {state.font_size}  Color: {state.foreground}"
-            f"  Inline: {inline}  Align: {state.alignment.value.capitalize()}  Indent: {state.indent}"
-            f"  List: {state.list_type.value.capitalize()}"
-        )
+        parts = [
+            f"Font: {state.font_family} {state.font_size}",
+            f"Color: {state.foreground}",
+            f"Inline: {inline}",
+            f"Align: {state.alignment.value.capitalize()}",
+            f"Indent: {state.indent}",
+            f"List: {state.list_type.value.capitalize()}",
+        ]
+        return "  ".join(parts)
 
     def _update_status(self) -> None:
         text = self._text.get("1.0", "end-1c")
         summary = self._editing_controller.summarize(text)
         formatting = self._formatting_status()
-        message = (
-            f"Chars: {summary.characters}  Words: {summary.words}  Lines: {summary.lines}"
-            f"  |  {formatting}"
+        counts = (
+            f"Chars: {summary.characters}  "
+            f"Words: {summary.words}  "
+            f"Lines: {summary.lines}"
         )
+        message = f"{counts}  |  {formatting}"
         if self._document_controller.metadata.is_modified:
             message += "  (modified)"
         self._status_var.set(message)
@@ -373,7 +457,7 @@ class Application:
         self._italic_var.set(state.italic)
         self._underline_var.set(state.underline)
         self._font_var.set(state.font_family)
-        self._size_var.set(state.font_size)
+        self._size_var.set(str(state.font_size))
         self._color_var.set(state.foreground)
         self._list_var.set(state.list_type.value)
 
@@ -392,7 +476,9 @@ class Application:
         query = simpledialog.askstring("Find", "Text to find:")
         if query is None:
             return
-        replacement = simpledialog.askstring("Replace", "Replace with:", initialvalue="")
+        replacement = simpledialog.askstring(
+            "Replace", "Replace with:", initialvalue=""
+        )
         if replacement is None:
             return
         content = self._text.get("1.0", "end-1c")
@@ -404,12 +490,17 @@ class Application:
             self._document_controller.mark_modified()
             self._text.edit_modified(True)
             self._update_status()
-        messagebox.showinfo("Find & Replace", f"Replaced {summary.replacements} occurrence(s).")
+        messagebox.showinfo(
+            "Find & Replace", f"Replaced {summary.replacements} occurrence(s)."
+        )
 
     def _insert_image(self) -> None:
         filename = filedialog.askopenfilename(
             title="Insert Image",
-            filetypes=(("Image files", "*.png *.jpg *.jpeg *.gif *.bmp"), ("All files", "*.*")),
+            filetypes=(
+                ("Image files", "*.png *.jpg *.jpeg *.gif *.bmp"),
+                ("All files", "*.*"),
+            ),
         )
         if not filename:
             return
@@ -423,9 +514,19 @@ class Application:
             return
         self._insert_menu.delete(0, tk.END)
         for name in self._object_controller.available_objects():
-            self._insert_menu.add_command(label=name, command=lambda n=name: self._object_controller.insert(n))
+            self._insert_menu.add_command(
+                label=name, command=self._make_insert_command(name)
+            )
 
-    def register_object_handler(self, name: str, handler: object) -> None:
+    def _make_insert_command(self, name: str) -> Callable[[], None]:
+        def callback() -> None:
+            self._object_controller.insert(name)
+
+        return callback
+
+    def register_object_handler(
+        self, name: str, handler: Callable[..., object]
+    ) -> None:
         """Allow plugins to publish additional insertable objects."""
 
         self._object_controller.register_handler(name, handler)
@@ -433,4 +534,3 @@ class Application:
 
 
 __all__ = ["Application"]
-

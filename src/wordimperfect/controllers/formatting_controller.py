@@ -175,4 +175,3 @@ class FormattingController:
         """Clear any active list styling."""
 
         self._state.list_type = ListType.NONE
-

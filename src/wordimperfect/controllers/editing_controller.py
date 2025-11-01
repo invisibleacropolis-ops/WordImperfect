@@ -8,8 +8,8 @@ entangling presentation concerns.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +42,9 @@ class EditingController:
     # ------------------------------------------------------------------
     # Search helpers
     # ------------------------------------------------------------------
-    def find_occurrences(self, text: str, query: str, *, case_sensitive: bool = False) -> List[int]:
+    def find_occurrences(
+        self, text: str, query: str, *, case_sensitive: bool = False
+    ) -> list[int]:
         """Return the starting indices of ``query`` within ``text``.
 
         Parameters
@@ -59,7 +61,7 @@ class EditingController:
             return []
         haystack = text if case_sensitive else text.lower()
         needle = query if case_sensitive else query.lower()
-        matches: List[int] = []
+        matches: list[int] = []
         index = haystack.find(needle)
         while index != -1:
             matches.append(index)
@@ -74,7 +76,7 @@ class EditingController:
         *,
         case_sensitive: bool = False,
         replace_all: bool = True,
-    ) -> "ReplacementSummary":
+    ) -> ReplacementSummary:
         """Replace occurrences of ``query`` with ``replacement``.
 
         Returns a :class:`ReplacementSummary` detailing how many substitutions
@@ -93,7 +95,7 @@ class EditingController:
             new_text = text[:first] + replacement + text[first + len(query) :]
             return ReplacementSummary(text=new_text, replacements=1, positions=[first])
 
-        segments: List[str] = []
+        segments: list[str] = []
         last_index = 0
         for match in matches:
             segments.append(text[last_index:match])
@@ -101,7 +103,9 @@ class EditingController:
             last_index = match + len(query)
         segments.append(text[last_index:])
         new_text = "".join(segments)
-        return ReplacementSummary(text=new_text, replacements=len(matches), positions=matches)
+        return ReplacementSummary(
+            text=new_text, replacements=len(matches), positions=matches
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,4 +115,3 @@ class ReplacementSummary:
     text: str
     replacements: int
     positions: Iterable[int]
-

@@ -37,7 +37,7 @@ class FileService:
             if Document is None:
                 msg = "python-docx is required to read .docx files"
                 raise RuntimeError(msg)
-            document = Document(path)
+            document = Document(str(path))
             return "\n".join(paragraph.text for paragraph in document.paragraphs)
 
         msg = f"Unsupported file format: {path.suffix}"
@@ -65,7 +65,7 @@ class FileService:
                 lines = [""]
             for line in lines:
                 document.add_paragraph(line)
-            document.save(path)
+            document.save(str(path))
             return
 
         msg = f"Unsupported file format: {path.suffix}"

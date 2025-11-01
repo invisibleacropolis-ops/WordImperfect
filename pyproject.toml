@@ -28,10 +28,17 @@ dev = [
     "isort>=5.13.0",
     "ruff>=0.3.0",
     "pytest>=8.1.0",
+    "mypy>=1.9.0",
+]
+release = [
+    "pyinstaller>=6.5.0",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"wordimperfect" = ["py.typed"]
 
 [tool.black]
 target-version = ["py311"]
@@ -46,6 +53,8 @@ known_first_party = ["wordimperfect"]
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "ANN", "C4"]
 ignore = []
 
@@ -55,4 +64,11 @@ known-first-party = ["wordimperfect"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["wordimperfect"]
+strict = true
+warn_unused_configs = true
+ignore_missing_imports = true
 

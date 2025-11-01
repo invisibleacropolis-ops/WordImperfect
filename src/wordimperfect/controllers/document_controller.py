@@ -8,9 +8,9 @@ GUI primitives.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 from wordimperfect.services import FileService
 
@@ -51,7 +51,9 @@ class DocumentController:
     def metadata(self) -> DocumentMetadata:
         """Return a copy of the current document metadata."""
 
-        return DocumentMetadata(path=self._metadata.path, is_modified=self._metadata.is_modified)
+        return DocumentMetadata(
+            path=self._metadata.path, is_modified=self._metadata.is_modified
+        )
 
     def mark_modified(self) -> None:
         """Flag the document as containing unsaved changes."""
@@ -125,4 +127,3 @@ class DocumentController:
         """Expose the file type filter definitions for file dialogs."""
 
         return self._SUPPORTED_FORMATS
-
