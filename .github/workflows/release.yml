@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: '3.11'
+            artifact_suffix: linux
+            archive_ext: tar.gz
+          - os: macos-latest
+            python-version: '3.11'
+            artifact_suffix: macos
+            archive_ext: tar.gz
+          - os: windows-latest
+            python-version: '3.11'
+            artifact_suffix: windows
+            archive_ext: zip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            pyproject.toml
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install release dependencies
+        run: python -m pip install .[release]
+
+      - name: Run test suite
+        run: pytest
+
+      - name: Build distributable with PyInstaller
+        run: pyinstaller packaging/wordimperfect.spec
+
+      - name: Archive build outputs (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          ARCHIVE_NAME: wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
+        run: |
+          tar -czf "$ARCHIVE_NAME" -C dist wordimperfect
+
+      - name: Archive build outputs (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ARCHIVE_NAME: wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
+        run: |
+          Compress-Archive -Path dist\\wordimperfect -DestinationPath $env:ARCHIVE_NAME -Force
+
+      - name: Generate checksum
+        shell: bash
+        env:
+          ARCHIVE_NAME: wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
+        run: |
+          python - <<'PY'
+from __future__ import annotations
+import hashlib
+import os
+archive = os.environ["ARCHIVE_NAME"]
+h = hashlib.sha256()
+with open(archive, "rb") as fh:
+    for chunk in iter(lambda: fh.read(1 << 20), b""):
+        h.update(chunk)
+with open(f"{archive}.sha256", "w", encoding="utf-8") as out:
+    out.write(f"{h.hexdigest()}  {archive}\n")
+PY
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordimperfect-${{ matrix.artifact_suffix }}
+          path: |
+            wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}
+            wordimperfect-${{ matrix.artifact_suffix }}.${{ matrix.archive_ext }}.sha256
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign archives
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          for file in artifacts/wordimperfect-*; do
+            if [[ -f "$file" && "$file" != *.sha256 && "$file" != *.sig ]]; then
+              cosign sign-blob --yes --output-signature "$file.sig" "$file"
+            fi
+          done
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/wordimperfect-*.tar.gz
+            artifacts/wordimperfect-*.tar.gz.sha256
+            artifacts/wordimperfect-*.zip
+            artifacts/wordimperfect-*.zip.sha256
+            artifacts/wordimperfect-*.sig
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
