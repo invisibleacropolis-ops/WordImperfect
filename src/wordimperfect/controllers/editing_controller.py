@@ -9,6 +9,7 @@ entangling presentation concerns.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Iterable, List
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,4 +38,77 @@ class EditingController:
         words = len(normalized.split()) if normalized else 0
         lines = text.count("\n") + 1 if text else 0
         return EditingSummary(characters=characters, words=words, lines=lines)
+
+    # ------------------------------------------------------------------
+    # Search helpers
+    # ------------------------------------------------------------------
+    def find_occurrences(self, text: str, query: str, *, case_sensitive: bool = False) -> List[int]:
+        """Return the starting indices of ``query`` within ``text``.
+
+        Parameters
+        ----------
+        text:
+            The text that should be searched.
+        query:
+            Substring that should be located.
+        case_sensitive:
+            Whether to perform a case sensitive comparison.
+        """
+
+        if not query:
+            return []
+        haystack = text if case_sensitive else text.lower()
+        needle = query if case_sensitive else query.lower()
+        matches: List[int] = []
+        index = haystack.find(needle)
+        while index != -1:
+            matches.append(index)
+            index = haystack.find(needle, index + len(needle) or index + 1)
+        return matches
+
+    def replace(
+        self,
+        text: str,
+        query: str,
+        replacement: str,
+        *,
+        case_sensitive: bool = False,
+        replace_all: bool = True,
+    ) -> "ReplacementSummary":
+        """Replace occurrences of ``query`` with ``replacement``.
+
+        Returns a :class:`ReplacementSummary` detailing how many substitutions
+        were performed and the resulting text. When ``replace_all`` is ``False``
+        only the first match is replaced.
+        """
+
+        if not query:
+            return ReplacementSummary(text=text, replacements=0, positions=[])
+        matches = self.find_occurrences(text, query, case_sensitive=case_sensitive)
+        if not matches:
+            return ReplacementSummary(text=text, replacements=0, positions=[])
+
+        if not replace_all:
+            first = matches[0]
+            new_text = text[:first] + replacement + text[first + len(query) :]
+            return ReplacementSummary(text=new_text, replacements=1, positions=[first])
+
+        segments: List[str] = []
+        last_index = 0
+        for match in matches:
+            segments.append(text[last_index:match])
+            segments.append(replacement)
+            last_index = match + len(query)
+        segments.append(text[last_index:])
+        new_text = "".join(segments)
+        return ReplacementSummary(text=new_text, replacements=len(matches), positions=matches)
+
+
+@dataclass(frozen=True, slots=True)
+class ReplacementSummary:
+    """Detailed information about a find & replace operation."""
+
+    text: str
+    replacements: int
+    positions: Iterable[int]
 
