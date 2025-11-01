@@ -21,6 +21,20 @@ class EditingSummary:
     lines: int
 
 
+@dataclass(frozen=True, slots=True)
+class SearchMatches:
+    """Container describing all matches for a given query."""
+
+    query: str
+    positions: tuple[int, ...]
+
+    def spans(self) -> tuple[tuple[int, int], ...]:
+        """Return inclusive-exclusive spans suitable for highlighting."""
+
+        length = len(self.query)
+        return tuple((start, start + length) for start in self.positions)
+
+
 class EditingController:
     """Compute derived information from textual content."""
 
@@ -42,10 +56,10 @@ class EditingController:
     # ------------------------------------------------------------------
     # Search helpers
     # ------------------------------------------------------------------
-    def find_occurrences(
+    def find_matches(
         self, text: str, query: str, *, case_sensitive: bool = False
-    ) -> list[int]:
-        """Return the starting indices of ``query`` within ``text``.
+    ) -> SearchMatches:
+        """Return all match offsets for ``query`` within ``text``.
 
         Parameters
         ----------
@@ -58,7 +72,7 @@ class EditingController:
         """
 
         if not query:
-            return []
+            return SearchMatches(query=query, positions=())
         haystack = text if case_sensitive else text.lower()
         needle = query if case_sensitive else query.lower()
         matches: list[int] = []
@@ -66,7 +80,40 @@ class EditingController:
         while index != -1:
             matches.append(index)
             index = haystack.find(needle, index + len(needle) or index + 1)
-        return matches
+        return SearchMatches(query=query, positions=tuple(matches))
+
+    def find_occurrences(
+        self, text: str, query: str, *, case_sensitive: bool = False
+    ) -> list[int]:
+        """Backward-compatible wrapper around :meth:`find_matches`."""
+
+        return list(
+            self.find_matches(text, query, case_sensitive=case_sensitive).positions
+        )
+
+    def next_occurrence(
+        self,
+        text: str,
+        query: str,
+        *,
+        start: int = 0,
+        case_sensitive: bool = False,
+        wrap: bool = False,
+    ) -> int | None:
+        """Return the index of the next occurrence at or after ``start``.
+
+        When ``wrap`` is ``True`` the search will restart from the beginning if
+        no further matches are found beyond ``start``. ``None`` is returned when
+        no match exists.
+        """
+
+        matches = self.find_matches(text, query, case_sensitive=case_sensitive)
+        for position in matches.positions:
+            if position >= start:
+                return position
+        if wrap and matches.positions:
+            return matches.positions[0]
+        return None
 
     def replace(
         self,
@@ -86,25 +133,25 @@ class EditingController:
 
         if not query:
             return ReplacementSummary(text=text, replacements=0, positions=[])
-        matches = self.find_occurrences(text, query, case_sensitive=case_sensitive)
-        if not matches:
+        matches = self.find_matches(text, query, case_sensitive=case_sensitive)
+        if not matches.positions:
             return ReplacementSummary(text=text, replacements=0, positions=[])
 
         if not replace_all:
-            first = matches[0]
+            first = matches.positions[0]
             new_text = text[:first] + replacement + text[first + len(query) :]
             return ReplacementSummary(text=new_text, replacements=1, positions=[first])
 
         segments: list[str] = []
         last_index = 0
-        for match in matches:
+        for match in matches.positions:
             segments.append(text[last_index:match])
             segments.append(replacement)
             last_index = match + len(query)
         segments.append(text[last_index:])
         new_text = "".join(segments)
         return ReplacementSummary(
-            text=new_text, replacements=len(matches), positions=matches
+            text=new_text, replacements=len(matches.positions), positions=matches.positions
         )
 
 

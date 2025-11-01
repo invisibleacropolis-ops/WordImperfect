@@ -33,7 +33,7 @@ This guide provides implementation notes and ongoing context for contributors bu
 | P1 | Document the data model and persistence strategy (if any). | 95% | `docs/data-model.md` captures controllers, in-memory state, and the JSON sidecar used to persist paragraph styles; remaining work is folding the metadata into native `.rtf`/`.docx` payloads. |
 | P2 | Populate `docs/` with technical references and design drafts. | 40% | Architecture and data-model references expanded with theming + styling metadata coverage; module deep-dives still needed. |
 | P2 | Persist per-paragraph styling metadata for richer round-tripping. | 75% | Paragraph styles now round-trip via `FileService` JSON sidecars; future enhancements will embed formatting directly in `.rtf`/`.docx`. |
-| P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 20% | Controller summaries exist; UI loop to be expanded. |
+| P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 70% | Controllers now expose match metadata and the GUI performs highlight-and-confirm replacements. Remaining work includes richer dialog widgets and keyboard shortcuts. |
 | P3 | Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding). | 0% | Requires asset loading strategy. |
 
 Progress percentages help stage multi-session work; update them after each sprint or notable milestone.
@@ -80,9 +80,9 @@ Document any deviations or special steps in this guide after the release complet
 
 ### Editing Utilities
 
-- `EditingController` exposes `find_occurrences` and `replace` helpers, returning deterministic summaries. The Tk menu now provides a modal find/replace flow using these utilities.
+- `EditingController` exposes search helpers (`find_occurrences()`, `find_matches()`, `next_occurrence()`) and replacement utilities. The Tk menu now walks users through match-by-match replacements, highlighting each span via the `search_match` tag.
 - **Rationale:** Centralising search logic keeps the GUI declarative and simplifies future additions (regex, case sensitivity toggles, etc.).
-- **Gaps:** The dialog remains minimal—no incremental highlighting, replace-next semantics, or history.
+- **Gaps:** The dialog remains minimal—no keyboard shortcuts, search history, or regex toggles yet.
 
 ### Object Insertion
 
