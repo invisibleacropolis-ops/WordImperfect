@@ -85,6 +85,12 @@ across common display densities. All icons live under `assets/icons/` and share 
 | `search` | Find/replace dialog | `assets/icons/search.svg` | Magnifier sized for 16px square button. |
 | `replace` | Find/replace dialog | `assets/icons/replace.svg` | Pair with search icon to convey bidirectional flow. |
 
+## Controller Highlights
+
+### Editing utilities
+
+- `EditingController` surfaces granular search helpers (`find_matches()`, `next_occurrence()`) alongside replacement summaries. `Application` uses these APIs to highlight each match with the `search_match` tag and request user confirmation before mutating text, enabling incremental navigation without complex widget code.
+
 ## Quality Tooling
 
 - Continuous testing via `pytest` with configuration in `pyproject.toml`.

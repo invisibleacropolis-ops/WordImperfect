@@ -7,7 +7,12 @@ be exercised independently.
 """
 
 from .document_controller import DocumentController
-from .editing_controller import EditingController, EditingSummary, ReplacementSummary
+from .editing_controller import (
+    EditingController,
+    EditingSummary,
+    ReplacementSummary,
+    SearchMatches,
+)
 from .formatting_controller import (
     Alignment,
     FormattingController,
@@ -23,6 +28,7 @@ __all__ = [
     "EditingController",
     "EditingSummary",
     "ReplacementSummary",
+    "SearchMatches",
     "Alignment",
     "ListType",
     "FormattingController",

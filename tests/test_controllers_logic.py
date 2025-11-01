@@ -9,6 +9,7 @@ from wordimperfect.controllers import (
     FormattingState,
     ListType,
     ObjectInsertionController,
+    SearchMatches,
     TextStyler,
 )
 
@@ -75,6 +76,24 @@ def test_editing_controller_find_and_replace() -> None:
     summary = controller.replace(text, "fish", "cat", replace_all=False)
     assert summary.replacements == 1
     assert summary.text.startswith("One cat")
+
+
+def test_editing_controller_match_metadata_and_navigation() -> None:
+    controller = EditingController()
+    text = "alpha beta Alpha"
+    matches = controller.find_matches(text, "alpha", case_sensitive=False)
+    assert isinstance(matches, SearchMatches)
+    assert matches.positions == (0, 11)
+    assert matches.spans() == ((0, 5), (11, 16))
+    assert controller.next_occurrence(text, "alpha", start=1, case_sensitive=False) == 11
+    assert (
+        controller.next_occurrence(text, "alpha", start=12, case_sensitive=False)
+        is None
+    )
+    assert (
+        controller.next_occurrence(text, "alpha", start=12, case_sensitive=False, wrap=True)
+        == 0
+    )
 
 
 def test_object_insertion_controller_executes_registered_handler() -> None:

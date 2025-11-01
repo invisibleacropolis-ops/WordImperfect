@@ -23,6 +23,8 @@ from wordimperfect.services import FileService
 class Application:
     """Bootstrap the Tkinter user interface."""
 
+    _SEARCH_TAG = "search_match"
+
     def __init__(self) -> None:
         self._root = tk.Tk()
         self._root.title("WordImperfect")
@@ -226,6 +228,11 @@ class Application:
 
     def _build_body(self) -> None:
         self._text.pack(expand=True, fill=tk.BOTH, padx=8, pady=8)
+        self._text.tag_configure(
+            self._SEARCH_TAG,
+            background="#fff59d",
+            foreground="#000000",
+        )
 
     def _build_status_bar(self) -> None:
         status_bar = ttk.Label(self._root, textvariable=self._status_var, anchor=tk.W)
@@ -474,7 +481,7 @@ class Application:
 
     def _open_find_replace(self) -> None:
         query = simpledialog.askstring("Find", "Text to find:")
-        if query is None:
+        if query is None or not query:
             return
         replacement = simpledialog.askstring(
             "Replace", "Replace with:", initialvalue=""
@@ -482,16 +489,56 @@ class Application:
         if replacement is None:
             return
         content = self._text.get("1.0", "end-1c")
-        summary = self._editing_controller.replace(content, query, replacement)
-        if summary.replacements:
-            with self._suspend_modified_tracking():
-                self._text.delete("1.0", tk.END)
-                self._text.insert("1.0", summary.text)
-            self._document_controller.mark_modified()
-            self._text.edit_modified(True)
-            self._update_status()
+        matches = self._editing_controller.find_matches(content, query)
+        if not matches.positions:
+            messagebox.showinfo(
+                "Find & Replace", "No matches were found for the supplied text."
+            )
+            return
+
+        replacements = 0
+        search_start = 0
+        while True:
+            match_index = self._editing_controller.next_occurrence(
+                content, query, start=search_start
+            )
+            if match_index is None:
+                break
+            match_end = match_index + len(query)
+            self._highlight_search_range(match_index, match_end)
+            response = messagebox.askyesnocancel(
+                "Find & Replace",
+                (
+                    "Replace this occurrence?\n\n"
+                    "Yes replaces the highlight, No skips to the next match, "
+                    "Cancel stops the search."
+                ),
+            )
+            self._clear_search_highlight()
+            if response is None:
+                break
+            if response:
+                with self._suspend_modified_tracking():
+                    start_index = self._text.index(f"1.0+{match_index}c")
+                    end_index = self._text.index(f"1.0+{match_end}c")
+                    self._text.delete(start_index, end_index)
+                    self._text.insert(start_index, replacement)
+                content = (
+                    content[:match_index]
+                    + replacement
+                    + content[match_end:]
+                )
+                replacements += 1
+                search_start = match_index + len(replacement)
+                self._document_controller.mark_modified()
+                self._text.edit_modified(True)
+                self._update_status()
+            else:
+                search_start = match_end
+
+        self._clear_search_highlight()
         messagebox.showinfo(
-            "Find & Replace", f"Replaced {summary.replacements} occurrence(s)."
+            "Find & Replace", f"Replaced {replacements} occurrence(s)."
         )
 
     def _insert_image(self) -> None:
@@ -517,6 +564,17 @@ class Application:
             self._insert_menu.add_command(
                 label=name, command=self._make_insert_command(name)
             )
+
+    def _highlight_search_range(self, start: int, end: int) -> None:
+        start_index = self._text.index(f"1.0+{start}c")
+        end_index = self._text.index(f"1.0+{end}c")
+        self._text.tag_remove(self._SEARCH_TAG, "1.0", tk.END)
+        self._text.tag_add(self._SEARCH_TAG, start_index, end_index)
+        self._text.mark_set(tk.INSERT, start_index)
+        self._text.see(start_index)
+
+    def _clear_search_highlight(self) -> None:
+        self._text.tag_remove(self._SEARCH_TAG, "1.0", tk.END)
 
     def _make_insert_command(self, name: str) -> Callable[[], None]:
         def callback() -> None:
