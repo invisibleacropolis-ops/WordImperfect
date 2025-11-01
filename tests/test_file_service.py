@@ -34,6 +34,7 @@ def test_write_and_read_rtf(tmp_path: Path, service: FileService) -> None:
 
 
 def test_write_and_read_docx(tmp_path: Path, service: FileService) -> None:
+    pytest.importorskip("docx", reason="python-docx optional dependency not installed")
     destination = tmp_path / "sample.docx"
     content = "First line\nSecond line"
 

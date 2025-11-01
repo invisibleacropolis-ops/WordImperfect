@@ -6,7 +6,10 @@ import io
 from pathlib import Path
 from typing import Final
 
-from docx import Document
+try:
+    from docx import Document
+except ImportError:  # pragma: no cover - optional dependency
+    Document = None  # type: ignore[assignment]
 
 
 class FileService:
@@ -31,6 +34,9 @@ class FileService:
         if suffix == self._RTF_SUFFIX:
             return self._decode_rtf(path.read_text(encoding=self._ENCODING))
         if suffix == self._DOCX_SUFFIX:
+            if Document is None:
+                msg = "python-docx is required to read .docx files"
+                raise RuntimeError(msg)
             document = Document(path)
             return "\n".join(paragraph.text for paragraph in document.paragraphs)
 
@@ -48,6 +54,9 @@ class FileService:
             path.write_text(self._encode_rtf(text), encoding=self._ENCODING)
             return
         if suffix == self._DOCX_SUFFIX:
+            if Document is None:
+                msg = "python-docx is required to write .docx files"
+                raise RuntimeError(msg)
             document = Document()
             lines = text.splitlines()
             if text.endswith("\n"):
