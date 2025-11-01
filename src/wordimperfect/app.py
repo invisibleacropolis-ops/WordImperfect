@@ -6,6 +6,8 @@ import tkinter as tk
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
+import threading
+import webbrowser
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from wordimperfect.controllers import (
@@ -18,7 +20,9 @@ from wordimperfect.controllers import (
     TextStyler,
 )
 from wordimperfect.dialogs import FindReplaceDialog
-from wordimperfect.services import FileService
+from wordimperfect.services import FileService, UpdateService
+from wordimperfect.services.update_service import UpdateCheckResult
+from . import __version__
 
 
 class Application:
@@ -36,6 +40,8 @@ class Application:
         self._editing_controller = EditingController()
         self._formatting_controller = FormattingController()
         self._object_controller = ObjectInsertionController()
+        self._update_service = UpdateService()
+        self._update_thread: threading.Thread | None = None
 
         self._text = tk.Text(self._root, wrap="word", undo=True)
         self._status_var = tk.StringVar(value="Ready")
@@ -125,6 +131,15 @@ class Application:
         self._object_controller.register_handler("Image…", self._insert_image)
         self._rebuild_insert_menu()
         menubar.add_cascade(label="Insert", menu=insert_menu)
+
+        help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(
+            label="Check for Updates…", command=self._check_for_updates
+        )
+        help_menu.add_command(
+            label="Open Download Page", command=self._open_download_page
+        )
+        menubar.add_cascade(label="Help", menu=help_menu)
 
         self._root.config(menu=menubar)
 
@@ -390,6 +405,79 @@ class Application:
     def _on_close(self) -> None:
         if self._confirm_discard_changes():
             self._root.destroy()
+
+    # ------------------------------------------------------------------
+    # Update helpers
+    # ------------------------------------------------------------------
+    def _check_for_updates(self) -> None:
+        if self._update_thread and self._update_thread.is_alive():
+            messagebox.showinfo(
+                "Update Check", "An update check is already in progress."
+            )
+            return
+        self._status_var.set("Checking for updates…")
+        self._update_thread = threading.Thread(
+            target=self._perform_update_check, daemon=True
+        )
+        self._update_thread.start()
+
+    def _perform_update_check(self) -> None:
+        result = self._update_service.check_for_updates(__version__)
+        self._root.after(0, lambda: self._handle_update_result(result))
+
+    def _handle_update_result(self, result: UpdateCheckResult) -> None:
+        self._update_thread = None
+        self._update_status()
+        if result.error:
+            messagebox.showerror(
+                "Update Check Failed",
+                (
+                    "WordImperfect could not contact the release feed. "
+                    f"Details: {result.error}"
+                ),
+            )
+            return
+
+        release = result.latest_release
+        if release is None:
+            messagebox.showinfo(
+                "Update Check",
+                "No releases were found in the download catalogue.",
+            )
+            return
+
+        if result.is_update_available:
+            notes = "\n".join(f"• {note}" for note in release.notes[:3])
+            headline = (
+                f"Version {release.version} is available (published {release.date})."
+            )
+            if release.deprecated:
+                headline += (
+                    "\n\n⚠️ The feed flags this build as deprecated."
+                )
+            if notes:
+                headline += f"\n\n{notes}"
+            headline += "\n\nOpen the download page now?"
+            if messagebox.askyesno("Update Available", headline):
+                self._open_download_page()
+            return
+
+        messagebox.showinfo(
+            "Up To Date",
+            f"WordImperfect {__version__} is currently the latest release.",
+        )
+
+    def _open_download_page(self) -> None:
+        url = self._update_service.download_page
+        try:
+            opened = webbrowser.open(url, new=2)
+        except Exception:
+            opened = False
+        if not opened:
+            messagebox.showinfo(
+                "Download WordImperfect",
+                f"Visit {url} to download the latest installers.",
+            )
 
     # ------------------------------------------------------------------
     # Status helpers
