@@ -133,6 +133,7 @@ class Application:
         menubar.add_cascade(label="Insert", menu=insert_menu)
 
         help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="User Guide", command=self._open_user_guide)
         help_menu.add_command(
             label="Check for Updates…", command=self._check_for_updates
         )
@@ -465,6 +466,27 @@ class Application:
         messagebox.showinfo(
             "Up To Date",
             f"WordImperfect {__version__} is currently the latest release.",
+        )
+
+    def _open_user_guide(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        manual = repo_root / "docs" / "end-user-manual" / "index.md"
+        targets: list[str] = []
+        if manual.exists():
+            targets.append(manual.as_uri())
+        targets.append(
+            "https://github.com/WordImperfect/WordImperfect/tree/main/docs/end-user-manual"
+        )
+        for target in targets:
+            try:
+                opened = webbrowser.open(target, new=2)
+            except Exception:
+                opened = False
+            if opened:
+                return
+        messagebox.showinfo(
+            "User Guide",
+            "Open https://github.com/WordImperfect/WordImperfect/tree/main/docs/end-user-manual in your browser to read the manual.",
         )
 
     def _open_download_page(self) -> None:
