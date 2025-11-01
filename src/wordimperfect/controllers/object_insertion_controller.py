@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any
 
-
-Handler = Callable[[Any], Any]
+Handler = Callable[..., object]
 
 
 class ObjectInsertionController:
@@ -30,7 +28,7 @@ class ObjectInsertionController:
 
         return tuple(self._handlers.keys())
 
-    def insert(self, name: str, *args: Any, **kwargs: Any) -> Any:
+    def insert(self, name: str, *args: object, **kwargs: object) -> object:
         """Execute the handler associated with ``name`` and return its result."""
 
         if name not in self._handlers:

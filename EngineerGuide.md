@@ -6,8 +6,9 @@ This guide provides implementation notes and ongoing context for contributors bu
 
 - **Runtime:** Python 3.11+ is targeted for development to leverage recent language features and typing improvements.
 - **Packaging:** The project uses the `src/` layout with [`setuptools`](https://setuptools.pypa.io/) metadata defined in `pyproject.toml`. The primary package is `wordimperfect`.
-- **Testing:** `pytest` is the default test runner. Tests live under `tests/` and mirror the module structure.
-- **Tooling:** Code formatting uses `black` and import sorting uses `isort`. Static analysis leverages `ruff` for linting to keep feedback fast.
+- **Testing:** `pytest` is the default test runner. Tests live under `tests/` and mirror the module structure. GitHub Actions executes the suite on pushes and pull requests.
+- **Tooling:** Code formatting uses `black` and import sorting uses `isort`. Static analysis leverages `ruff` for linting and `mypy` for strict typing feedback.
+- **Packaging:** Desktop builds are automated through PyInstaller (`packaging/wordimperfect.spec`).
 - **Documentation:** High-level references live in `README.md`. Architecture notes, decision records, and progress metrics remain here. Long-form technical documents can be placed under `docs/` as the project evolves.
 
 ## 2. Decision Log
@@ -20,28 +21,55 @@ This guide provides implementation notes and ongoing context for contributors bu
 | 2024-06-03 | Implemented WordPad-formatting controllers and Tkinter styling layer. | Adds font, colour, paragraph, and list management without tying logic to widgets. | ✅ Active |
 | 2024-06-03 | Added editing search utilities and find/replace UX. | Centralises text search logic and surfaces it through the Tk toolbar/menu. | ✅ Active |
 | 2024-06-03 | Introduced pluggable object insertion registry. | Provides extensible hooks for embedding images and future OLE-like payloads. | ✅ Active |
+| 2024-06-10 | Added GitHub Actions CI for Ruff, mypy, and pytest. | Ensures continuous linting and testing on every change. | ✅ Active |
+| 2024-06-10 | Authored PyInstaller spec + release profile. | Enables reproducible desktop bundles during releases. | ✅ Active |
 
-## 3. TODO Backlog
+## 3. Workflow Backlog (Prioritised)
 
-- Define the initial game specification, including rules and core mechanics.
-- Flesh out the GUI requirements and asset pipeline.
-- Add continuous integration workflows for testing and linting.
-- Document the data model and persistence strategy (if any).
-- Populate `docs/` with technical references and design drafts.
-- Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding with Tk `PhotoImage`).
-- Persist per-paragraph styling metadata for richer round-tripping (currently tags are applied only in-memory).
-- Extend find/replace UX to support match highlighting and incremental navigation.
+| Priority | Item | % Complete | Notes |
+|----------|------|------------|-------|
+| P0 | Define the initial game specification, including rules and core mechanics. | 0% | Required to scope gameplay milestones. |
+| P1 | Flesh out the GUI requirements and asset pipeline. | 10% | Toolbar established; theming + asset sourcing outstanding. |
+| P1 | Document the data model and persistence strategy (if any). | 0% | Aligns controllers with planned storage back-ends. |
+| P2 | Populate `docs/` with technical references and design drafts. | 30% | Architecture primer drafted; deeper module deep-dives pending. |
+| P2 | Persist per-paragraph styling metadata for richer round-tripping. | 5% | Controllers expose hooks but persistence unimplemented. |
+| P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 20% | Controller summaries exist; UI loop to be expanded. |
+| P3 | Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding). | 0% | Requires asset loading strategy. |
+
+Progress percentages help stage multi-session work; update them after each sprint or notable milestone.
 
 ## 4. Progress Metrics
 
 | Metric | Current Status |
 |--------|----------------|
 | Code coverage | Not yet tracked (suite expanded with controller + styling tests) |
-| Automated tests | Functional unit coverage for document, formatting, editing, insertion, and styling helpers |
-| Linting | Configured (`ruff`, `black`, `isort`) |
-| Releases | None yet (see `CHANGELOG.md`) |
+| Automated tests | Functional unit coverage for document, formatting, editing, insertion, and styling helpers; CI enforces pytest |
+| Linting | Configured (`ruff`, `black`, `isort`, `mypy`) and enforced in CI |
+| Releases | None yet (see `CHANGELOG.md`); PyInstaller spec ready |
 
-## 5. WordPad Feature Set Implementation
+## 5. Versioning & Release Workflow
+
+- **Versioning Strategy:** Semantic Versioning (`MAJOR.MINOR.PATCH`). Increment `MINOR` for new features, `PATCH` for fixes, and `MAJOR` for breaking API/UX changes.
+- **Version Sources:** Update `project.version` in `pyproject.toml` and `__version__` in `wordimperfect/__init__.py` together.
+
+### Release Checklist
+
+1. Review backlog for completed items and capture them in `CHANGELOG.md`.
+2. Bump the semantic version in `pyproject.toml` and `wordimperfect/__init__.py`.
+3. Run local quality gates:
+   - `ruff check .`
+   - `mypy`
+   - `pytest`
+4. Build the distributable bundle:
+   - `python -m pip install -e .[release]`
+   - `pyinstaller packaging/wordimperfect.spec`
+5. Smoke test the generated app in `dist/wordimperfect/`.
+6. Create a signed tag (`git tag -s vX.Y.Z`) and push tags to origin.
+7. Draft the GitHub release attaching the bundled artifacts.
+
+Document any deviations or special steps in this guide after the release completes.
+
+## 6. WordPad Feature Set Implementation
 
 ### Inline and Paragraph Styling
 
@@ -67,7 +95,7 @@ This guide provides implementation notes and ongoing context for contributors bu
 - Added unit coverage around formatting toggles, search helpers, object insertion, and the styling adapter. A fake text widget enables deterministic assertions without invoking Tk.
 - Future integration work should continue to exercise GUI flows via focused helpers rather than end-to-end Tk sessions to avoid headless environment issues.
 
-## 6. Contributor Notes
+## 7. Contributor Notes
 
 - When adding new modules, include docstrings and type annotations to aid discoverability.
 - Update this guide with major architectural changes or new tooling decisions.

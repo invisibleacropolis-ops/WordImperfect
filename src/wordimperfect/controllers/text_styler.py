@@ -2,10 +2,31 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Protocol, cast
 
 from .formatting_controller import Alignment, FormattingState, ListType
+
+
+class TextWidget(Protocol):
+    def tag_configure(self, tag: str, *args: object, **kwargs: object) -> object: ...
+
+    def tag_add(self, tag: str, *args: str) -> None: ...
+
+    def tag_remove(self, tag: str, *args: str) -> None: ...
+
+    def configure(self, *args: object, **kwargs: object) -> object: ...
+
+    def get(self, start: str, end: str) -> str: ...
+
+    def delete(self, start: str, end: str) -> None: ...
+
+    def insert(self, index: str, value: str) -> None: ...
+
+    def tag_ranges(self, tag: str) -> Iterable[str]: ...
+
+    def index(self, index: str) -> str: ...
 
 
 @dataclass
@@ -22,7 +43,7 @@ class TextStyler:
     INDENT_WIDTH = 20
 
     def __init__(self, widget: object) -> None:
-        self._widget = widget
+        self._widget = cast(TextWidget, widget)
 
     # ------------------------------------------------------------------
     # Public API
@@ -43,11 +64,22 @@ class TextStyler:
         decorations: list[str] = []
         if state.underline:
             decorations.append("underline")
-        style = " ".join(filter(None, (weight if weight != "normal" else "", slant if slant != "roman" else "", *decorations)))
+        style = " ".join(
+            filter(
+                None,
+                (
+                    weight if weight != "normal" else "",
+                    slant if slant != "roman" else "",
+                    *decorations,
+                ),
+            )
+        )
         if not style:
             style = "normal"
         font = (state.font_family, state.font_size, style)
-        self._widget.tag_configure(self.INLINE_TAG, font=font, foreground=state.foreground)
+        self._widget.tag_configure(
+            self.INLINE_TAG, font=font, foreground=state.foreground
+        )
 
         selection = self._selection_range()
         if selection:
@@ -62,7 +94,9 @@ class TextStyler:
         indent_px = state.indent * self.INDENT_WIDTH
         for alignment in Alignment:
             tag = self.ALIGN_TAG_PREFIX + alignment.value
-            self._widget.tag_configure(tag, justify=alignment.value, lmargin1=indent_px, lmargin2=indent_px)
+            self._widget.tag_configure(
+                tag, justify=alignment.value, lmargin1=indent_px, lmargin2=indent_px
+            )
 
         selection = self._selection_range() or _IndexRange("1.0", "end")
         for alignment in Alignment:

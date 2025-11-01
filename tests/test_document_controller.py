@@ -28,7 +28,9 @@ def test_save_without_path_raises(controller: DocumentController) -> None:
         controller.save_document("text")
 
 
-def test_open_and_save_round_trip(tmp_path: Path, controller: DocumentController) -> None:
+def test_open_and_save_round_trip(
+    tmp_path: Path, controller: DocumentController
+) -> None:
     path = tmp_path / "example.txt"
     path.write_text("initial", encoding="utf-8")
 
@@ -44,8 +46,9 @@ def test_open_and_save_round_trip(tmp_path: Path, controller: DocumentController
     assert controller.metadata.is_modified is False
 
 
-def test_supported_filetypes_contains_expected_extensions(controller: DocumentController) -> None:
+def test_supported_filetypes_contains_expected_extensions(
+    controller: DocumentController,
+) -> None:
     entries = list(controller.supported_filetypes())
     patterns = {pattern for _, pattern in entries}
     assert {"*.rtf", "*.txt", "*.docx"}.issubset(patterns)
-

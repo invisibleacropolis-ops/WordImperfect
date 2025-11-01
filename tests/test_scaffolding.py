@@ -8,5 +8,3 @@ def test_package_imports() -> None:
 
     module = importlib.import_module("wordimperfect")
     assert module.__version__ == "0.1.0"
-
-

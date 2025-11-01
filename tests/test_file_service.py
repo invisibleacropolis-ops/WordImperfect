@@ -56,4 +56,3 @@ def test_write_unknown_extension_raises(tmp_path: Path, service: FileService) ->
 
     with pytest.raises(ValueError):
         service.write(target, "text")
-

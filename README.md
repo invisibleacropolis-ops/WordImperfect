@@ -21,9 +21,35 @@ WordImperfect/
    ```bash
    python -m pip install -e .
    ```
-2. Run the automated tests to verify the environment:
+2. Install the development tooling (optional but recommended for contributors):
+   ```bash
+   python -m pip install -e .[dev]
+   ```
+3. Run the automated tests to verify the environment:
    ```bash
    pytest
    ```
 
-Additional workflow details, architecture decisions, and open tasks are tracked in `EngineerGuide.md`.
+### Quality Checks
+
+- Ruff linting:
+  ```bash
+  ruff check .
+  ```
+- Static type analysis (mypy):
+  ```bash
+  mypy
+  ```
+
+### Building a Desktop Bundle
+
+Use the provided PyInstaller specification to produce a distributable desktop folder:
+
+```bash
+python -m pip install -e .[release]
+pyinstaller packaging/wordimperfect.spec
+```
+
+The resulting bundle will be placed under `dist/wordimperfect/`.
+
+Additional workflow details, architecture decisions, release process, and open tasks are tracked in `EngineerGuide.md`.

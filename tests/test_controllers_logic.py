@@ -116,7 +116,7 @@ class FakeTextWidget:
     def tag_remove(self, tag: str, start: str, end: str) -> None:
         self.tag_remove_calls.append((tag, start, end))
 
-    def tag_ranges(self, tag: str):
+    def tag_ranges(self, tag: str) -> tuple[str, str] | tuple[()]:
         if tag != "sel" or self.selection is None:
             return ()
         start, end = self.selection
@@ -192,4 +192,3 @@ def test_text_styler_applies_inline_paragraph_and_list_formatting() -> None:
     assert inline_cfg["font"][1] == 14
     assert inline_cfg["foreground"] == "#0f0f0f"
     assert fake.text.startswith("    \u2022 alpha")
-
