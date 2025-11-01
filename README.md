@@ -1,7 +1,7 @@
 
 # WordImperfect
 
-WordImperfect is an experimental platform for exploring imperfect information word-based games. This repository currently provides the foundational project scaffolding so future contributors can focus on implementing gameplay mechanics, AI opponents, and graphical interfaces.
+WordImperfect is a focused desktop word processor designed for fast drafting, rich formatting, and lightweight document management. This repository provides the foundational project scaffolding so contributors can concentrate on editing features, file interoperability, and a polished writing workflow.
 
 ## Project Layout
 
@@ -42,6 +42,17 @@ WordImperfect/
   mypy
   ```
 
+## Using WordImperfect
+
+WordImperfect centers around a single document workspace tailored to drafting and revising text-heavy files. Key concepts:
+
+- **Document lifecycle:** Use *File → New* to start a blank document, *File → Open…* to load an existing `.txt`, and the *Save*/*Save As…* actions to persist changes. Unsaved changes trigger a prompt before closing.
+- **Formatting controls:** The toolbar exposes font family, size, colour, bold, italic, underline, alignment, indentation, and list styling. Selection-sensitive toggles update automatically when the caret moves into styled regions.
+- **Editing utilities:** Standard clipboard shortcuts are available along with a *Find & Replace…* dialog powered by the editing controllers for deterministic replacements.
+- **Object insertion:** The *Insert* menu provides extensible hooks, currently shipping with image placeholder insertion for drafting layouts that will later include media.
+
+Additional guides for advanced workflows live in `docs/` as they are produced.
+
 ### Building a Desktop Bundle
 
 Use the provided PyInstaller specification to produce a distributable desktop folder:
@@ -54,6 +65,4 @@ pyinstaller packaging/wordimperfect.spec
 The resulting bundle will be placed under `dist/wordimperfect/`.
 
 Additional workflow details, architecture decisions, release process, and open tasks are tracked in `EngineerGuide.md`.
-=======
-Hello
 

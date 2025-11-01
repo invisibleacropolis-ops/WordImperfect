@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "wordimperfect"
 version = "0.1.0"
-description = "Scaffolding for the WordImperfect imperfect information word game platform."
+description = "Scaffolding for the WordImperfect desktop word processor."
 readme = "README.md"
 authors = [
     { name = "WordImperfect Contributors" }
