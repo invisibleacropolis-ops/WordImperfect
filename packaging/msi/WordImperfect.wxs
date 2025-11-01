@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?include WordImperfectComponents.wxi?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="WordImperfect"
+    Version="$(var.ProductVersion)"
+    Manufacturer="WordImperfect Contributors"
+    Language="1033"
+    UpgradeCode="{AF15F58A-A4E6-44F1-A064-E6488A62BCF1}"
+    InstallScope="perMachine"
+    Platform="x64"
+    InstallerVersion="500"
+    Compressed="yes"
+    InstallPrivileges="elevated" />
+
+  <MajorUpgrade DowngradeErrorMessage="A newer version of WordImperfect is already installed." />
+
+  <MediaTemplate EmbedCab="yes" />
+
+  <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+  <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+  <Icon Id="AppIcon.ico" SourceFile="$(var.WORDIMPERFECT_DIST)\wordimperfect.exe" />
+
+  <Feature Id="MainFeature" Title="WordImperfect" Level="1">
+    <ComponentGroupRef Id="WordImperfectComponents" />
+    <ComponentRef Id="WordImperfectShortcut" />
+  </Feature>
+
+  <Directory Id="TARGETDIR" Name="SourceDir">
+    <Directory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="WordImperfect" />
+    </Directory>
+    <Directory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="WordImperfect" />
+    </Directory>
+  </Directory>
+
+  <Component Id="WordImperfectShortcut" Guid="{1ADAFE46-AA9E-468E-981A-B0B31679A049}">
+    <Shortcut
+      Id="ProgramMenuShortcut"
+      Name="WordImperfect"
+      Target="[INSTALLFOLDER]wordimperfect.exe"
+      WorkingDirectory="INSTALLFOLDER"
+      Description="Launch WordImperfect"
+      Icon="AppIcon.ico" />
+    <RemoveFolder Id="RemoveProgramMenuDir" Directory="ProgramMenuDir" On="uninstall" />
+    <RegistryValue
+      Root="HKCU"
+      Key="Software\WordImperfect"
+      Name="Installed"
+      Type="integer"
+      Value="1"
+      KeyPath="yes" />
+  </Component>
+
+  <UI>
+    <UIRef Id="WixUI_InstallDir" />
+  </UI>
+</Wix>
