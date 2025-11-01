@@ -1,3 +1,4 @@
+
 # WordImperfect
 
 WordImperfect is an experimental platform for exploring imperfect information word-based games. This repository currently provides the foundational project scaffolding so future contributors can focus on implementing gameplay mechanics, AI opponents, and graphical interfaces.
@@ -53,3 +54,6 @@ pyinstaller packaging/wordimperfect.spec
 The resulting bundle will be placed under `dist/wordimperfect/`.
 
 Additional workflow details, architecture decisions, release process, and open tasks are tracked in `EngineerGuide.md`.
+=======
+Hello
+
