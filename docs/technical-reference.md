@@ -90,6 +90,31 @@ This reference drills into the controllers and services that currently power Wor
 3. **Find & replace** – Dialog interactions call `EditingController.find_matches`/`replace`. The GUI highlights spans returned from `SearchMatches.spans()` and issues incremental replacements without reimplementing search mechanics.
 4. **Saving** – `DocumentController.save_document` exports both text and paragraph metadata through `FileService.write_with_styles`, ensuring formatting survives editor restarts even for plaintext formats.
 
+## GUI Composition
+
+- **Location:** `wordimperfect.app.Application`
+- **Window skeleton:**
+  - A root `Tk` instance hosts the text editor body, toolbar, dynamic status bar, and the shared menubar.
+  - The body is a `tk.Text` widget configured with word wrapping and undo stacks. Styling is centralised via `TextStyler` so controller state translates directly into tag edits.
+  - The toolbar is a `ttk.Frame` populated with comboboxes (font, size, list mode) and toggle buttons (bold/italic/underline, alignment, indent controls). Each widget simply mutates `FormattingController` state before delegating to `TextStyler`.
+  - The status bar is a `ttk.Label` bound to a `StringVar` summarising document metrics from `EditingController.summarize` and the active formatting flags.
+- **Menus and accelerators:**
+  - File/Edit/Insert menus are constructed in `_build_menu`. File actions delegate entirely to `DocumentController`/`FileService`; editing shortcuts use virtual events where possible to lean on Tk defaults.
+  - Insert menu entries are generated from `ObjectInsertionController.available_objects`, allowing plugins to register additional handlers without editing the GUI code.
+  - Find/replace is handled by `FindReplaceDialog` (see below) and receives global accelerators (`Ctrl+F`, `F3`, `Shift+F3`) for incremental navigation.
+- **Dialogs:**
+  - `FindReplaceDialog` (`wordimperfect.dialogs.find_replace_dialog.FindReplaceDialog`) encapsulates the incremental search UX. It keeps its own case-sensitive toggle, maintains search state using `EditingController.find_matches`, highlights matches through `Application._highlight_search_range`, and requests replacements via callback hooks into the main window. The dialog exposes dedicated buttons for find-next/previous, replace variants, and replace-all operations.
+
+## Packaging Scripts
+
+- **Location:** `packaging/wordimperfect.spec`
+- **Purpose:** Defines the PyInstaller build graph for the desktop bundle.
+- **Key behaviours:**
+  - Includes the `wordimperfect` package from the `src/` layout and collects runtime assets from `assets/` so icons and default templates land inside the distributable.
+  - Registers a GUI entry point via `wordimperfect.__main__` and disables the console window for end users.
+  - Sets up a deterministic build directory (`build/wordimperfect`) and output directory (`dist/wordimperfect`) so CI scripts can archive artefacts without extra discovery logic.
+- **Extension notes:** When new resources are added (fonts, localisation tables, etc.), update the `datas` tuple in the spec. Custom build hooks can live alongside the spec if we need to patch binaries after PyInstaller finishes.
+
 ## Testing Considerations
 
 - Controllers are pure Python and covered by `tests/test_controllers_logic.py`. Add new assertions there when controller behaviour evolves.

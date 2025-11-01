@@ -31,9 +31,9 @@ This guide provides implementation notes and ongoing context for contributors bu
 | P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 100% | Workflow guide published in `docs/writing-workflow.md`; future edits will track new features as they land. |
 | P1 | Flesh out the GUI requirements and asset pipeline. | 95% | `docs/architecture.md` now details window layout, event lifecycle, theming presets, the baseline icon catalogue, and a PyInstaller validation checklist covering asset bundles. Final verification will come from the first packaged release. |
 | P1 | Document the data model and persistence strategy (if any). | 95% | `docs/data-model.md` captures controllers, in-memory state, and the JSON sidecar used to persist paragraph styles; remaining work is folding the metadata into native `.rtf`/`.docx` payloads. |
-| P2 | Populate `docs/` with technical references and design drafts. | 65% | Added `docs/technical-reference.md` covering controllers/services; remaining work is documenting GUI widget composition and packaging scripts. |
+| P2 | Populate `docs/` with technical references and design drafts. | 100% | `docs/technical-reference.md` now outlines controllers/services, GUI composition, and the PyInstaller packaging spec. Future edits will expand as new modules land. |
 | P2 | Persist per-paragraph styling metadata for richer round-tripping. | 75% | Paragraph styles now round-trip via `FileService` JSON sidecars; future enhancements will embed formatting directly in `.rtf`/`.docx`. |
-| P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 70% | Controllers now expose match metadata and the GUI performs highlight-and-confirm replacements. Remaining work includes richer dialog widgets and keyboard shortcuts. |
+| P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 100% | Added a dedicated `FindReplaceDialog` with case sensitivity toggles, incremental navigation, replace-all, and global `F3` shortcuts backed by `EditingController`. |
 | P3 | Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding). | 0% | Requires asset loading strategy. |
 
 Progress percentages help stage multi-session work; update them after each sprint or notable milestone.
@@ -80,9 +80,9 @@ Document any deviations or special steps in this guide after the release complet
 
 ### Editing Utilities
 
-- `EditingController` exposes search helpers (`find_occurrences()`, `find_matches()`, `next_occurrence()`) and replacement utilities. The Tk menu now walks users through match-by-match replacements, highlighting each span via the `search_match` tag.
-- **Rationale:** Centralising search logic keeps the GUI declarative and simplifies future additions (regex, case sensitivity toggles, etc.).
-- **Gaps:** The dialog remains minimal—no keyboard shortcuts, search history, or regex toggles yet.
+- `EditingController` exposes search helpers (`find_occurrences()`, `find_matches()`, `next_occurrence()`) and replacement utilities. A dedicated `FindReplaceDialog` now manages the workflow with case-sensitive toggles, incremental navigation buttons, replace-all, and shared `F3`/`Shift+F3` accelerators for quick iteration.
+- **Rationale:** Centralising search logic keeps the GUI declarative and simplifies future additions (regex, search history, etc.) while the dialog concentrates Tk widget state and callbacks.
+- **Gaps:** Regex searches and persistent history are still open questions once we broaden the editing feature set.
 
 ### Object Insertion
 
