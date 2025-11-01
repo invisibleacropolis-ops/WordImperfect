@@ -13,6 +13,7 @@ from .formatting_controller import (
     FormattingController,
     FormattingState,
     ListType,
+    ParagraphStyleSnapshot,
 )
 from .object_insertion_controller import ObjectInsertionController
 from .text_styler import TextStyler
@@ -26,6 +27,7 @@ __all__ = [
     "ListType",
     "FormattingController",
     "FormattingState",
+    "ParagraphStyleSnapshot",
     "ObjectInsertionController",
     "TextStyler",
 ]

@@ -22,6 +22,17 @@ persistence layer. Use it when extending document storage or introducing richer 
 - `TextStyler.apply()` consumes a snapshot of `FormattingState` to configure Tk tags. Any additional formatting attribute should be
   captured in `FormattingState`, mutated through the controller, and translated inside `TextStyler` to keep presentation logic in a
   single location.
+- **`ParagraphStyleSnapshot`** exposes paragraph-level formatting (alignment, indent, list type) for persistence. Controllers request
+  a snapshot from `FormattingController.paragraph_style()` when paragraph metadata needs to be stored alongside document content.
+
+## Paragraph styling metadata
+
+- `DocumentMetadata` now contains a `paragraph_styles: dict[int, ParagraphStyleSnapshot]` map keyed by paragraph index. This enables the
+  application to remember block-level formatting choices independently of inline styling.
+- `DocumentController.record_paragraph_style()` stores or updates entries in this map. Consumers fetch copies using
+  `DocumentController.paragraph_style()` or `export_paragraph_styles()` when preparing to serialise documents.
+- Persistence is intentionally shallow today: metadata lives in memory only. The next milestone for this backlog item is teaching
+  `FileService` to emit and read paragraph style payloads (e.g., embedding RTF paragraph control words or DOCX paragraph properties).
 
 ## Editing Summaries
 

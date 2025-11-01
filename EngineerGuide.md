@@ -29,10 +29,10 @@ This guide provides implementation notes and ongoing context for contributors bu
 | Priority | Item | % Complete | Notes |
 |----------|------|------------|-------|
 | P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 100% | Workflow guide published in `docs/writing-workflow.md`; future edits will track new features as they land. |
-| P1 | Flesh out the GUI requirements and asset pipeline. | 65% | `docs/architecture.md` now details window layout, event lifecycle, and asset bundling; theming presets + icon catalogue still required. |
-| P1 | Document the data model and persistence strategy (if any). | 70% | `docs/data-model.md` captures controllers, in-memory state, and `FileService` format support; styling round-trip plan remains TODO. |
-| P2 | Populate `docs/` with technical references and design drafts. | 30% | Architecture primer drafted; deeper module deep-dives pending. |
-| P2 | Persist per-paragraph styling metadata for richer round-tripping. | 5% | Controllers expose hooks but persistence unimplemented. |
+| P1 | Flesh out the GUI requirements and asset pipeline. | 85% | `docs/architecture.md` now details window layout, event lifecycle, theming presets, and the baseline icon catalogue; remaining work is validating assets in packaged builds. |
+| P1 | Document the data model and persistence strategy (if any). | 80% | `docs/data-model.md` captures controllers, in-memory state, and styling metadata snapshots; persistence wiring for styles still pending. |
+| P2 | Populate `docs/` with technical references and design drafts. | 40% | Architecture and data-model references expanded with theming + styling metadata coverage; module deep-dives still needed. |
+| P2 | Persist per-paragraph styling metadata for richer round-tripping. | 25% | Document controller now stores paragraph style snapshots; file-service round trip work outstanding. |
 | P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 20% | Controller summaries exist; UI loop to be expanded. |
 | P3 | Attach rendering logic for object handlers beyond textual placeholders (e.g., true image embedding). | 0% | Requires asset loading strategy. |
 

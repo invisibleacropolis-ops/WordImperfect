@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from wordimperfect.controllers import DocumentController
+from wordimperfect.controllers import (
+    Alignment,
+    DocumentController,
+    FormattingController,
+)
 from wordimperfect.services import FileService
 
 
@@ -52,3 +56,26 @@ def test_supported_filetypes_contains_expected_extensions(
     entries = list(controller.supported_filetypes())
     patterns = {pattern for _, pattern in entries}
     assert {"*.rtf", "*.txt", "*.docx"}.issubset(patterns)
+
+
+def test_paragraph_style_round_trip(controller: DocumentController) -> None:
+    formatting = FormattingController()
+    formatting.set_alignment(Alignment.RIGHT)
+    formatting.increase_indent()
+
+    controller.record_paragraph_style(0, formatting.paragraph_style())
+    snapshot = controller.paragraph_style(0)
+    assert snapshot is not None
+    assert snapshot.alignment is Alignment.RIGHT
+    assert snapshot.indent == 1
+
+    styles = controller.export_paragraph_styles()
+    assert 0 in styles
+
+
+def test_paragraph_style_requires_non_negative_index(
+    controller: DocumentController,
+) -> None:
+    formatting = FormattingController()
+    with pytest.raises(ValueError):
+        controller.record_paragraph_style(-1, formatting.paragraph_style())
