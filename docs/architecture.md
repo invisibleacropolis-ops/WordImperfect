@@ -1,7 +1,7 @@
 # Architecture Overview
 
 This document accompanies `EngineerGuide.md` with a module-level reference for outside engineers. Update it when new packages or
-subsystems are introduced.
+subsystems are introduced. For controller- and service-level API notes, see `docs/technical-reference.md`.
 
 ## High-Level Components
 
