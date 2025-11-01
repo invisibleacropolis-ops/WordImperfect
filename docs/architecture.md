@@ -16,6 +16,33 @@ subsystems are introduced.
 The GUI remains thin: controllers expose pure-Python state transitions, while `TextStyler` adapts them to Tk tags. This separation
 keeps domain logic testable and makes alternative front-ends feasible.
 
+### GUI Requirements
+
+- **Primary window** – `wordimperfect.app.Application` builds a single Tk root sized to `900x600` with a text widget (`tk.Text`) as the
+  editing surface. All controller state is configured during initialisation so the UI can be recreated programmatically.
+- **Menu system** – File/Edit/Insert menus are constructed from controller commands. Every action is paired with a keyboard
+  accelerator (`<Control-*>` bindings) to keep the workflow accessible on Windows, macOS, and Linux. Insert menu entries are
+  regenerated whenever plugins register new object handlers.
+- **Toolbar** – A single-row ttk toolbar exposes font family/size selectors, colour picker, inline toggle buttons, alignment
+  buttons, indent adjustments, and list controls. Widgets read/write controller-backed Tk variables so the UI stays in sync when
+  formatting changes are driven programmatically (e.g., via future scripting APIs).
+- **Status bar** – A ttk label at the window footer shows live document metrics (`EditingController.summarize`) alongside inline
+  formatting state. Modified documents append a `(modified)` tag that mirrors window-title behaviour.
+- **Event lifecycle** – Editing operations that mutate the document wrap Tk calls inside `_suspend_modified_tracking()` to avoid
+  recursive `<<Modified>>` notifications. New GUI features should follow this pattern whenever they perform scripted edits.
+
+### Asset Pipeline
+
+- **Source of truth** – All distributable imagery, icons, and configuration live in `assets/`. The directory is empty by default to
+  keep the repo lightweight; designers can add subfolders (e.g., `assets/icons/`, `assets/themes/`).
+- **Runtime loading** – Assets are accessed via `pathlib.Path` lookups relative to `Application`'s module directory. Avoid using
+  working-directory assumptions so packaged builds resolve resources correctly.
+- **Build integration** – `packaging/wordimperfect.spec` automatically bundles the entire `assets/` tree into PyInstaller builds. Any
+  new asset types should be added here if they need special handling (e.g., fonts requiring registration on startup).
+- **Theming** – Tk/ttk styling is centralised in the toolbar creation logic; introducing additional themes should define ttk style
+  configuration helpers and ship associated palette files under `assets/themes/`. Document new style toggles alongside the toolbar
+  notes above when adding them.
+
 ## Quality Tooling
 
 - Continuous testing via `pytest` with configuration in `pyproject.toml`.

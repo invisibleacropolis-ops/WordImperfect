@@ -28,9 +28,9 @@ This guide provides implementation notes and ongoing context for contributors bu
 
 | Priority | Item | % Complete | Notes |
 |----------|------|------------|-------|
-| P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 95% | Dedicated workflow guide added in `docs/writing-workflow.md`; README now links to it. |
-| P1 | Flesh out the GUI requirements and asset pipeline. | 10% | Toolbar established; theming + typography asset sourcing outstanding. |
-| P1 | Document the data model and persistence strategy (if any). | 0% | Aligns controllers with planned storage back-ends. |
+| P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 100% | Workflow guide published in `docs/writing-workflow.md`; future edits will track new features as they land. |
+| P1 | Flesh out the GUI requirements and asset pipeline. | 65% | `docs/architecture.md` now details window layout, event lifecycle, and asset bundling; theming presets + icon catalogue still required. |
+| P1 | Document the data model and persistence strategy (if any). | 70% | `docs/data-model.md` captures controllers, in-memory state, and `FileService` format support; styling round-trip plan remains TODO. |
 | P2 | Populate `docs/` with technical references and design drafts. | 30% | Architecture primer drafted; deeper module deep-dives pending. |
 | P2 | Persist per-paragraph styling metadata for richer round-tripping. | 5% | Controllers expose hooks but persistence unimplemented. |
 | P3 | Extend find/replace UX to support match highlighting and incremental navigation. | 20% | Controller summaries exist; UI loop to be expanded. |
