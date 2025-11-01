@@ -43,6 +43,15 @@ class FormattingState:
     list_type: ListType = ListType.NONE
 
 
+@dataclass(slots=True)
+class ParagraphStyleSnapshot:
+    """Serialisable representation of paragraph level formatting."""
+
+    alignment: Alignment
+    indent: int
+    list_type: ListType
+
+
 class FormattingController:
     """Mutate :class:`FormattingState` instances based on user actions."""
 
@@ -60,6 +69,15 @@ class FormattingController:
             font_family=self._state.font_family,
             font_size=self._state.font_size,
             foreground=self._state.foreground,
+            alignment=self._state.alignment,
+            indent=self._state.indent,
+            list_type=self._state.list_type,
+        )
+
+    def paragraph_style(self) -> ParagraphStyleSnapshot:
+        """Return a snapshot of the current paragraph level formatting."""
+
+        return ParagraphStyleSnapshot(
             alignment=self._state.alignment,
             indent=self._state.indent,
             list_type=self._state.list_type,

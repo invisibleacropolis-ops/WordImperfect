@@ -31,6 +31,17 @@ keeps domain logic testable and makes alternative front-ends feasible.
 - **Event lifecycle** – Editing operations that mutate the document wrap Tk calls inside `_suspend_modified_tracking()` to avoid
   recursive `<<Modified>>` notifications. New GUI features should follow this pattern whenever they perform scripted edits.
 
+#### Theming presets
+
+- **Preset catalog** – `assets/themes/` stores JSON presets under filenames such as `light.json`, `dark.json`, and `high-contrast.json`.
+  Each preset defines Tk/ttk style names, palette values, and toolbar icon tint rules. A future `ThemeService` will enumerate files in
+  this folder at startup to populate a "Theme" submenu.
+- **Runtime application** – Theme activation flows through a dedicated helper (`wordimperfect.app.apply_theme`) that binds palette colours
+  to ttk style maps. Controllers remain unaware of theme selection; widgets receive style changes via Tk variable traces.
+- **Extensibility** – Third-party themes can be dropped into `assets/themes/` without code changes provided they expose the `base`,
+  `accent`, and `surface` colour keys plus typography overrides (`font_family`, `font_size`). Invalid files are ignored with a warning to
+  keep the UX resilient.
+
 ### Asset Pipeline
 
 - **Source of truth** – All distributable imagery, icons, and configuration live in `assets/`. The directory is empty by default to
@@ -42,6 +53,27 @@ keeps domain logic testable and makes alternative front-ends feasible.
 - **Theming** – Tk/ttk styling is centralised in the toolbar creation logic; introducing additional themes should define ttk style
   configuration helpers and ship associated palette files under `assets/themes/`. Document new style toggles alongside the toolbar
   notes above when adding them.
+
+#### Icon catalogue
+
+The application surface references the following baseline icons. Designers should export assets at 1x, 1.5x, and 2x scale to balance crispness
+across common display densities. All icons live under `assets/icons/` and share a monochrome SVG source for theming tinting.
+
+| Identifier | Usage | File name | Notes |
+|------------|-------|-----------|-------|
+| `document-new` | Toolbar "New" button | `assets/icons/document-new.svg` | Neutral outline that reads well when tinted accent colour. |
+| `document-open` | Toolbar "Open" button | `assets/icons/document-open.svg` | Folder with up arrow to imply import. |
+| `document-save` | Toolbar "Save" button | `assets/icons/document-save.svg` | Modernised diskette outline retained for recognisability. |
+| `format-bold` | Inline formatting toggle | `assets/icons/format-bold.svg` | Render the glyph at 14pt weight to match Tk default sizing. |
+| `format-italic` | Inline formatting toggle | `assets/icons/format-italic.svg` | Ensure slant is at least 12° for clarity. |
+| `format-underline` | Inline formatting toggle | `assets/icons/format-underline.svg` | Align underline stroke with Tk baseline metrics. |
+| `format-align-left` | Paragraph alignment | `assets/icons/format-align-left.svg` | Use consistent bar spacing across all alignment icons. |
+| `format-align-center` | Paragraph alignment | `assets/icons/format-align-center.svg` | |
+| `format-align-right` | Paragraph alignment | `assets/icons/format-align-right.svg` | |
+| `format-list-bullet` | List toggle | `assets/icons/format-list-bullet.svg` | Circular bullets sized to 3px radius at 1x scale. |
+| `format-list-numbered` | List toggle | `assets/icons/format-list-numbered.svg` | Reserve margin for double-digit markers. |
+| `search` | Find/replace dialog | `assets/icons/search.svg` | Magnifier sized for 16px square button. |
+| `replace` | Find/replace dialog | `assets/icons/replace.svg` | Pair with search icon to convey bidirectional flow. |
 
 ## Quality Tooling
 

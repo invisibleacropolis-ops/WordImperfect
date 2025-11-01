@@ -9,9 +9,10 @@ GUI primitives.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
+from wordimperfect.controllers.formatting_controller import ParagraphStyleSnapshot
 from wordimperfect.services import FileService
 
 
@@ -21,6 +22,7 @@ class DocumentMetadata:
 
     path: Path | None = None
     is_modified: bool = False
+    paragraph_styles: dict[int, ParagraphStyleSnapshot] = field(default_factory=dict)
 
 
 class DocumentController:
@@ -52,7 +54,16 @@ class DocumentController:
         """Return a copy of the current document metadata."""
 
         return DocumentMetadata(
-            path=self._metadata.path, is_modified=self._metadata.is_modified
+            path=self._metadata.path,
+            is_modified=self._metadata.is_modified,
+            paragraph_styles={
+                index: ParagraphStyleSnapshot(
+                    alignment=style.alignment,
+                    indent=style.indent,
+                    list_type=style.list_type,
+                )
+                for index, style in self._metadata.paragraph_styles.items()
+            },
         )
 
     def mark_modified(self) -> None:
@@ -72,6 +83,11 @@ class DocumentController:
         """Reset the controller to track a brand-new, unsaved document."""
 
         self._metadata = DocumentMetadata()
+
+    def clear_paragraph_styles(self) -> None:
+        """Remove any tracked paragraph styling metadata."""
+
+        self._metadata.paragraph_styles.clear()
 
     def open_document(self, path: Path) -> str:
         """Load a document from ``path`` and update the metadata.
@@ -114,6 +130,47 @@ class DocumentController:
         self._metadata.path = destination
         self.mark_clean()
         return destination
+
+    # ------------------------------------------------------------------
+    # Styling metadata
+    # ------------------------------------------------------------------
+    def record_paragraph_style(
+        self, paragraph_index: int, style: ParagraphStyleSnapshot
+    ) -> None:
+        """Persist the style assigned to ``paragraph_index`` in memory."""
+
+        if paragraph_index < 0:
+            msg = "Paragraph index must be non-negative"
+            raise ValueError(msg)
+        self._metadata.paragraph_styles[paragraph_index] = ParagraphStyleSnapshot(
+            alignment=style.alignment,
+            indent=style.indent,
+            list_type=style.list_type,
+        )
+
+    def paragraph_style(self, paragraph_index: int) -> ParagraphStyleSnapshot | None:
+        """Return the stored style for ``paragraph_index`` if one exists."""
+
+        style = self._metadata.paragraph_styles.get(paragraph_index)
+        if style is None:
+            return None
+        return ParagraphStyleSnapshot(
+            alignment=style.alignment,
+            indent=style.indent,
+            list_type=style.list_type,
+        )
+
+    def export_paragraph_styles(self) -> dict[int, ParagraphStyleSnapshot]:
+        """Return a shallow copy of the tracked paragraph styling metadata."""
+
+        return {
+            index: ParagraphStyleSnapshot(
+                alignment=style.alignment,
+                indent=style.indent,
+                list_type=style.list_type,
+            )
+            for index, style in self._metadata.paragraph_styles.items()
+        }
 
     # ------------------------------------------------------------------
     # User interface helpers
