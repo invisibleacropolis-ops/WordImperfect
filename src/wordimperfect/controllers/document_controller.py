@@ -12,7 +12,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from wordimperfect.controllers.formatting_controller import ParagraphStyleSnapshot
+from wordimperfect.controllers.formatting_controller import (
+    Alignment,
+    ListType,
+    ParagraphStyleSnapshot,
+)
 from wordimperfect.services import FileService
 
 
@@ -104,8 +108,24 @@ class DocumentController:
             The textual representation of the loaded document.
         """
 
-        text = self._file_service.read(path)
-        self._metadata = DocumentMetadata(path=path, is_modified=False)
+        text, paragraph_styles = self._file_service.read_with_styles(path)
+        metadata = DocumentMetadata(path=path, is_modified=False)
+        for index, payload in paragraph_styles.items():
+            if not isinstance(payload, dict):
+                continue
+            alignment_value = payload.get("alignment")
+            indent_value = payload.get("indent")
+            list_type_value = payload.get("list_type")
+
+            alignment = self._coerce_alignment(alignment_value)
+            list_type = self._coerce_list_type(list_type_value)
+            indent_int = self._coerce_indent(indent_value)
+            metadata.paragraph_styles[index] = ParagraphStyleSnapshot(
+                alignment=alignment,
+                indent=indent_int,
+                list_type=list_type,
+            )
+        self._metadata = metadata
         return text
 
     def save_document(self, text: str, path: Path | None = None) -> Path:
@@ -126,10 +146,59 @@ class DocumentController:
             msg = "Cannot save a document without a target path."
             raise ValueError(msg)
 
-        self._file_service.write(destination, text)
+        paragraph_styles = self.export_paragraph_styles()
+        payload = {
+            index: {
+                "alignment": style.alignment.value,
+                "indent": style.indent,
+                "list_type": style.list_type.value,
+            }
+            for index, style in paragraph_styles.items()
+        }
+
+        self._file_service.write_with_styles(destination, text, payload)
         self._metadata.path = destination
         self.mark_clean()
         return destination
+
+    # ------------------------------------------------------------------
+    # Metadata coercion helpers
+    # ------------------------------------------------------------------
+    def _coerce_alignment(self, value: object) -> Alignment:
+        """Best-effort conversion of serialised alignment data."""
+
+        if isinstance(value, Alignment):
+            return value
+        if isinstance(value, str):
+            try:
+                return Alignment(value)
+            except ValueError:
+                return Alignment.LEFT
+        return Alignment.LEFT
+
+    def _coerce_list_type(self, value: object) -> ListType:
+        """Best-effort conversion of serialised list type data."""
+
+        if isinstance(value, ListType):
+            return value
+        if isinstance(value, str):
+            try:
+                return ListType(value)
+            except ValueError:
+                return ListType.NONE
+        return ListType.NONE
+
+    def _coerce_indent(self, value: object) -> int:
+        """Return a valid indent value derived from ``value``."""
+
+        if isinstance(value, int):
+            return max(0, value)
+        if isinstance(value, str) and value.strip():
+            try:
+                return max(0, int(value))
+            except ValueError:
+                return 0
+        return 0
 
     # ------------------------------------------------------------------
     # Styling metadata

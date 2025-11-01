@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from wordimperfect.controllers import (
     Alignment,
     DocumentController,
     FormattingController,
+    ListType,
 )
 from wordimperfect.services import FileService
 
@@ -79,3 +81,36 @@ def test_paragraph_style_requires_non_negative_index(
     formatting = FormattingController()
     with pytest.raises(ValueError):
         controller.record_paragraph_style(-1, formatting.paragraph_style())
+
+
+def test_save_and_open_preserves_paragraph_styles(
+    tmp_path: Path, controller: DocumentController
+) -> None:
+    destination = tmp_path / "styled.txt"
+    formatting = FormattingController()
+    formatting.set_alignment(Alignment.CENTER)
+    formatting.increase_indent()
+    formatting.set_list_type(ListType.BULLET)
+
+    controller.record_paragraph_style(2, formatting.paragraph_style())
+    controller.save_document("content", destination)
+
+    metadata_path = destination.with_suffix(destination.suffix + ".styles.json")
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert payload == {
+        "2": {
+            "alignment": Alignment.CENTER.value,
+            "indent": 1,
+            "list_type": ListType.BULLET.value,
+        }
+    }
+
+    controller.new_document()
+    loaded_text = controller.open_document(destination)
+    assert loaded_text == "content"
+
+    restored = controller.paragraph_style(2)
+    assert restored is not None
+    assert restored.alignment is Alignment.CENTER
+    assert restored.indent == 1
+    assert restored.list_type is ListType.BULLET

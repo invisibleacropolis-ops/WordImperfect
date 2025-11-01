@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -56,3 +57,34 @@ def test_write_unknown_extension_raises(tmp_path: Path, service: FileService) ->
 
     with pytest.raises(ValueError):
         service.write(target, "text")
+
+
+def test_read_with_styles_returns_metadata(tmp_path: Path, service: FileService) -> None:
+    destination = tmp_path / "with_styles.txt"
+    destination.write_text("payload", encoding="utf-8")
+    metadata_path = destination.with_suffix(destination.suffix + ".styles.json")
+    metadata_path.write_text(
+        json.dumps({"0": {"alignment": "left", "indent": 2, "list_type": "bullet"}}),
+        encoding="utf-8",
+    )
+
+    text, metadata = service.read_with_styles(destination)
+    assert text == "payload"
+    assert metadata == {0: {"alignment": "left", "indent": 2, "list_type": "bullet"}}
+
+
+def test_write_with_styles_manages_sidecar(tmp_path: Path, service: FileService) -> None:
+    destination = tmp_path / "styled.txt"
+    payload = {0: {"alignment": "center", "indent": 1, "list_type": "numbered"}}
+
+    service.write_with_styles(destination, "text", payload)
+    assert destination.read_text(encoding="utf-8") == "text"
+
+    metadata_path = destination.with_suffix(destination.suffix + ".styles.json")
+    stored = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert stored == {
+        "0": {"alignment": "center", "indent": 1, "list_type": "numbered"}
+    }
+
+    service.write_with_styles(destination, "text", {})
+    assert metadata_path.exists() is False
