@@ -28,8 +28,8 @@ This guide provides implementation notes and ongoing context for contributors bu
 
 | Priority | Item | % Complete | Notes |
 |----------|------|------------|-------|
-| P0 | Define the initial game specification, including rules and core mechanics. | 0% | Required to scope gameplay milestones. |
-| P1 | Flesh out the GUI requirements and asset pipeline. | 10% | Toolbar established; theming + asset sourcing outstanding. |
+| P0 | Document the baseline writing workflow, document lifecycle, and essential formatting scope. | 60% | README now captures lifecycle, formatting, editing, and insertion usage guidance. |
+| P1 | Flesh out the GUI requirements and asset pipeline. | 10% | Toolbar established; theming + typography asset sourcing outstanding. |
 | P1 | Document the data model and persistence strategy (if any). | 0% | Aligns controllers with planned storage back-ends. |
 | P2 | Populate `docs/` with technical references and design drafts. | 30% | Architecture primer drafted; deeper module deep-dives pending. |
 | P2 | Persist per-paragraph styling metadata for richer round-tripping. | 5% | Controllers expose hooks but persistence unimplemented. |
